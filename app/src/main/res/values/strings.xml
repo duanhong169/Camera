@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">VideoApp</string>
+    <string name="record_video">录制视频</string>
+    <string name="play">播放</string>
+    <string name="no_enough_permission">没有足够的权限（相机、录音、文件存储），无法录制视频</string>
+    <string name="recording">录制中</string>
+    <string name="record">录制</string>
+    <string name="cancel">取消</string>
+    <string name="finish">完成</string>
+</resources>
