@@ -6,6 +6,13 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <top.defaults.video.AutoFitTextureView
+        android:id="@+id/texture"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true" />
+
     <TextView
         android:id="@+id/status"
         android:layout_width="match_parent"
@@ -29,7 +36,7 @@
         android:fitsSystemWindows="true">
 
         <Button
-            android:id="@+id/start"
+            android:id="@+id/video"
             android:layout_width="70dp"
             android:layout_height="70dp"
             android:layout_centerHorizontal="true"
@@ -43,15 +50,6 @@
             android:padding="10dp"
             android:text="@string/cancel" />
 
-        <Button
-            android:id="@+id/finish"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerVertical="true"
-            android:layout_alignParentEnd="true"
-            android:padding="10dp"
-            android:text="@string/finish"
-            tools:ignore="RelativeOverlap" />
     </RelativeLayout>
 
 </RelativeLayout>

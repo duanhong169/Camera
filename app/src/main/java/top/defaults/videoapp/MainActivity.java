@@ -1,25 +1,30 @@
 package top.defaults.videoapp;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.hardware.camera2.CameraAccessException;
-import android.hardware.camera2.CameraCharacteristics;
-import android.hardware.camera2.CameraManager;
+import android.content.pm.ResolveInfo;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
+import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
-import timber.log.Timber;
+import com.jakewharton.rxbinding2.view.RxView;
+import com.tbruyelle.rxpermissions2.RxPermissions;
+
+import java.io.File;
+import java.util.List;
+import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final int REQUEST_PERMISSIONS = 1;
     private static final int REQUEST_VIDEO_RECORD = 2;
 
     private View prepareToRecord;
@@ -27,55 +32,29 @@ public class MainActivity extends AppCompatActivity {
     private TextView play;
     private TextView fileInfo;
 
+    @SuppressLint("CheckResult")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        CameraManager manager = (CameraManager) getSystemService(CAMERA_SERVICE);
-        try {
-            for (String cameraId : manager.getCameraIdList()) {
-                CameraCharacteristics chars = manager.getCameraCharacteristics(cameraId);
-                Integer facing = chars.get(CameraCharacteristics.LENS_FACING);
-                Timber.d("Camera Id: %s, facing: %d", cameraId, facing);
-            }
-        } catch (CameraAccessException e) {
-            e.printStackTrace();
-        }
-
+        RxPermissions rxPermissions = new RxPermissions(this);
         prepareToRecord = findViewById(R.id.prepare_to_record);
-        prepareToRecord.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED
-                        || ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED
-                        || ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                    ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO, Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                            REQUEST_PERMISSIONS);
-                } else {
-                    startVideoRecordActivity();
-                }
-            }
-        });
+        RxView.clicks(prepareToRecord)
+                .compose(rxPermissions.ensure(Manifest.permission.CAMERA,
+                        Manifest.permission.RECORD_AUDIO,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE))
+                .subscribe(granted -> {
+                    if (granted) {
+                        startVideoRecordActivity();
+                    } else {
+                        Snackbar.make(prepareToRecord, getString(R.string.no_enough_permission), Snackbar.LENGTH_SHORT).setAction("确认", null).show();
+                    }
+                });
+
         playLayout = findViewById(R.id.play_layout);
         play = findViewById(R.id.play);
         fileInfo = findViewById(R.id.file_info);
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        switch (requestCode) {
-            case REQUEST_PERMISSIONS:
-                if (grantResults.length > 2
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED
-                        && grantResults[1] == PackageManager.PERMISSION_GRANTED
-                        && grantResults[2] == PackageManager.PERMISSION_GRANTED) {
-                    startVideoRecordActivity();
-                } else {
-                    Snackbar.make(prepareToRecord, getString(R.string.no_enough_permission), Snackbar.LENGTH_SHORT).setAction("确认", null).show();
-                }
-                break;
-        }
     }
 
     private void startVideoRecordActivity() {
@@ -86,5 +65,37 @@ public class MainActivity extends AppCompatActivity {
 
         Intent intent = new Intent(MainActivity.this, VideoRecordActivity.class);
         startActivityForResult(intent, REQUEST_VIDEO_RECORD);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (resultCode == RESULT_OK && requestCode == REQUEST_VIDEO_RECORD) {
+            String filePath = data.getStringExtra(VideoRecordActivity.EXTRA_RECORDED_VIDEO_FILE_PATH);
+            if (!TextUtils.isEmpty(filePath)) {
+                File file = new File(filePath);
+                play.setText(String.format(Locale.US, getString(R.string.play_file), file.getName()));
+                fileInfo.setText(String.format(Locale.US, "文件大小：%d字节", file.length()));
+                playLayout.setVisibility(View.VISIBLE);
+                play.setOnClickListener(view -> {
+                    Intent intent = new Intent(Intent.ACTION_VIEW);
+                    Uri videoURI = FileProvider.getUriForFile(MainActivity.this, getApplicationContext().getPackageName() + ".provider", file);
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+                        videoURI = Uri.fromFile(file);
+                    }
+                    intent.setDataAndType(videoURI, "video/mp4");
+                    intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+                    PackageManager packageManager = getPackageManager();
+                    List<ResolveInfo> activities = packageManager.queryIntentActivities(intent, 0);
+                    boolean isIntentSafe = activities.size() > 0;
+
+                    if (isIntentSafe) {
+                        startActivity(intent);
+                    } else {
+                        Toast.makeText(MainActivity.this, "没有找到视频播放器，无法播放", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+        }
     }
 }
