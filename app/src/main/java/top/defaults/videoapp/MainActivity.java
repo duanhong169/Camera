@@ -25,6 +25,8 @@ import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
 
+    public static final String EXTRA_RECORDED_VIDEO_FILE_PATH = "extra_recorded_video_file_path";
+
     private static final int REQUEST_VIDEO_RECORD = 2;
 
     private View prepareToRecord;
@@ -48,7 +50,7 @@ public class MainActivity extends AppCompatActivity {
                     if (granted) {
                         startVideoRecordActivity();
                     } else {
-                        Snackbar.make(prepareToRecord, getString(R.string.no_enough_permission), Snackbar.LENGTH_SHORT).setAction("确认", null).show();
+                        Snackbar.make(prepareToRecord, getString(R.string.no_enough_permission), Snackbar.LENGTH_SHORT).setAction("Confirm", null).show();
                     }
                 });
 
@@ -63,18 +65,18 @@ public class MainActivity extends AppCompatActivity {
         fileInfo.setText("");
         play.setOnClickListener(null);
 
-        Intent intent = new Intent(MainActivity.this, VideoRecordActivity.class);
+        Intent intent = new Intent(MainActivity.this, PhotographerActivity.class);
         startActivityForResult(intent, REQUEST_VIDEO_RECORD);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == RESULT_OK && requestCode == REQUEST_VIDEO_RECORD) {
-            String filePath = data.getStringExtra(VideoRecordActivity.EXTRA_RECORDED_VIDEO_FILE_PATH);
+            String filePath = data.getStringExtra(EXTRA_RECORDED_VIDEO_FILE_PATH);
             if (!TextUtils.isEmpty(filePath)) {
                 File file = new File(filePath);
                 play.setText(String.format(Locale.US, getString(R.string.play_file), file.getName()));
-                fileInfo.setText(String.format(Locale.US, "文件大小：%d字节", file.length()));
+                fileInfo.setText(String.format(Locale.US, "File size：%dB", file.length()));
                 playLayout.setVisibility(View.VISIBLE);
                 play.setOnClickListener(view -> {
                     Intent intent = new Intent(Intent.ACTION_VIEW);
@@ -92,7 +94,7 @@ public class MainActivity extends AppCompatActivity {
                     if (isIntentSafe) {
                         startActivity(intent);
                     } else {
-                        Toast.makeText(MainActivity.this, "没有找到视频播放器，无法播放", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(MainActivity.this, "No video player found", Toast.LENGTH_SHORT).show();
                     }
                 });
             }

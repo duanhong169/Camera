@@ -25,7 +25,7 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".VideoRecordActivity"/>
+        <activity android:name=".PhotographerActivity"/>
 
         <provider
             android:name="android.support.v4.content.FileProvider"
