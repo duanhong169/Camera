@@ -154,6 +154,6 @@ public class Logger {
 
         String fileName = stackTraceElement[5 - offset].getFileName();
         int lineNumber = stackTraceElement[5 - offset].getLineNumber();
-        return fileName + ":" + lineNumber;
+        return ".(" + fileName + ":" + lineNumber + ")";
     }
 }
