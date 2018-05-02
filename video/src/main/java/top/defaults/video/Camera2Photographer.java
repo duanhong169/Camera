@@ -143,7 +143,7 @@ public class Camera2Photographer implements InternalPhotographer {
     @Override
     public void startRecording(MediaRecorderConfigurator configurator) {
         throwIfNoMediaRecorder();
-        if (null == cameraDevice || !textureView.isAvailable() || null == previewSize) {
+        if (cameraDevice == null || !textureView.isAvailable() || previewSize == null) {
             callbackHandler.onError(new Error(Error.ERROR_CAMERA));
             return;
         }
@@ -286,14 +286,14 @@ public class Camera2Photographer implements InternalPhotographer {
         }
     }
 
-    private CameraDevice.StateCallback mStateCallback = new CameraDevice.StateCallback() {
+    private CameraDevice.StateCallback stateCallback = new CameraDevice.StateCallback() {
 
         @Override
         public void onOpened(@NonNull CameraDevice cameraDevice) {
             Camera2Photographer.this.cameraDevice = cameraDevice;
             realStartPreview();
             cameraOpenCloseLock.release();
-            if (null != textureView) {
+            if (textureView != null) {
                 configureTransform(textureView.getWidth(), textureView.getHeight());
             }
         }
@@ -342,7 +342,7 @@ public class Camera2Photographer implements InternalPhotographer {
     };
 
     private void realStartPreview() {
-        if (null == cameraDevice || !textureView.isAvailable() || null == previewSize) {
+        if (cameraDevice == null || !textureView.isAvailable() || previewSize == null) {
             return;
         }
         try {
@@ -375,13 +375,11 @@ public class Camera2Photographer implements InternalPhotographer {
     }
 
     private void updatePreview() {
-        if (null == cameraDevice) {
+        if (cameraDevice == null) {
             return;
         }
         try {
             previewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
-            HandlerThread thread = new HandlerThread("CameraPreview");
-            thread.start();
             previewSession.setRepeatingRequest(previewBuilder.build(), null, backgroundHandler);
         } catch (CameraAccessException e) {
             e.printStackTrace();
@@ -429,7 +427,7 @@ public class Camera2Photographer implements InternalPhotographer {
                 }
                 configureTransform(width, height);
                 mediaRecorder = new MediaRecorder();
-                manager.openCamera(cameraId, mStateCallback, null);
+                manager.openCamera(cameraId, stateCallback, null);
             }
         } catch (CameraAccessException e) {
             callbackHandler.onError(new Error(Error.ERROR_CAMERA, "Cannot access the camera."));
@@ -484,7 +482,7 @@ public class Camera2Photographer implements InternalPhotographer {
     }
 
     private void configureTransform(int viewWidth, int viewHeight) {
-        if (null == textureView || null == previewSize) {
+        if (textureView == null || previewSize == null) {
             return;
         }
         int rotation = activityContext.getWindowManager().getDefaultDisplay().getRotation();
@@ -493,7 +491,7 @@ public class Camera2Photographer implements InternalPhotographer {
         RectF bufferRect = new RectF(0, 0, previewSize.getHeight(), previewSize.getWidth());
         float centerX = viewRect.centerX();
         float centerY = viewRect.centerY();
-        if (Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation) {
+        if (rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270) {
             bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
             matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
             float scale = Math.max(
@@ -509,11 +507,11 @@ public class Camera2Photographer implements InternalPhotographer {
         try {
             cameraOpenCloseLock.acquire();
             closePreviewSession();
-            if (null != cameraDevice) {
+            if (cameraDevice != null) {
                 cameraDevice.close();
                 cameraDevice = null;
             }
-            if (null != mediaRecorder) {
+            if (mediaRecorder != null) {
                 mediaRecorder.release();
                 mediaRecorder = null;
             }
