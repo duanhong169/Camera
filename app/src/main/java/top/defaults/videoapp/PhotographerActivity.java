@@ -5,7 +5,9 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
+import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.Collections;
@@ -23,9 +25,13 @@ import top.defaults.video.PhotographerFactory;
 public class PhotographerActivity extends AppCompatActivity {
 
     private boolean isRecordingVideo;
+    private int lensFacing = CameraCharacteristics.LENS_FACING_BACK;
 
     @BindView(R.id.texture)
     AutoFitTextureView textureView;
+
+    @BindView(R.id.status)
+    TextView statusTextView;
 
     @BindView(R.id.video)
     Button videoButton;
@@ -34,8 +40,10 @@ public class PhotographerActivity extends AppCompatActivity {
     void video() {
         if (isRecordingVideo) {
             photographer.stopRecording();
+            statusTextView.setVisibility(View.INVISIBLE);
         } else {
             photographer.startRecording(null);
+            videoButton.setEnabled(false);
         }
     }
 
@@ -43,6 +51,17 @@ public class PhotographerActivity extends AppCompatActivity {
     void cancel() {
         photographer.stopRecording();
         finish();
+    }
+
+    @OnClick(R.id.flip)
+    void flip() {
+        photographer.stopPreview();
+        if (lensFacing == CameraCharacteristics.LENS_FACING_BACK) {
+            lensFacing = CameraCharacteristics.LENS_FACING_FRONT;
+        } else {
+            lensFacing = CameraCharacteristics.LENS_FACING_BACK;
+        }
+        photographer.startPreview(Collections.singletonMap(Keys.LENS_FACING, lensFacing));
     }
 
     Photographer photographer;
@@ -57,6 +76,9 @@ public class PhotographerActivity extends AppCompatActivity {
             @Override
             public void onStartRecording() {
                 isRecordingVideo = true;
+                videoButton.setEnabled(true);
+                videoButton.setText(R.string.finish);
+                statusTextView.setVisibility(View.VISIBLE);
             }
 
             @Override
@@ -89,7 +111,7 @@ public class PhotographerActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        photographer.startPreview(Collections.singletonMap(Keys.LENS_FACING, CameraCharacteristics.LENS_FACING_FRONT));
+        photographer.startPreview(Collections.singletonMap(Keys.LENS_FACING, lensFacing));
     }
 
     @Override

@@ -22,7 +22,7 @@
         android:gravity="center_horizontal"
         android:text="@string/recording"
         android:textSize="14sp"
-        android:textColor="@color/colorAccent"
+        android:textColor="@android:color/holo_red_dark"
         android:visibility="invisible"
         tools:visibility="visible"/>
 
@@ -31,13 +31,13 @@
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:padding="10dp"
+        android:layout_alignBottom="@+id/texture"
         android:background="#7fffffff"
         android:fitsSystemWindows="true">
 
         <Button
             android:id="@+id/video"
-            android:layout_width="70dp"
+            android:layout_width="wrap_content"
             android:layout_height="70dp"
             android:layout_centerHorizontal="true"
             android:text="@string/record"/>
@@ -47,8 +47,15 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
-            android:padding="10dp"
             android:text="@string/cancel" />
+
+        <Button
+            android:id="@+id/flip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_alignParentEnd="true"
+            android:text="@string/flip" />
 
     </RelativeLayout>
 
