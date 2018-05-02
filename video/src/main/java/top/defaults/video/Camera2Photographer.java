@@ -39,6 +39,8 @@ import java.util.Map;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
+import top.defaults.logger.Logger;
+
 public class Camera2Photographer implements InternalPhotographer {
 
     private static final int CALLBACK_ON_START_RECORDING = 1;
