@@ -20,6 +20,8 @@ import android.content.Context;
 import android.util.AttributeSet;
 import android.view.TextureView;
 
+import top.defaults.logger.Logger;
+
 /**
  * A {@link TextureView} that can be adjusted to a specified aspect ratio.
  */
@@ -52,6 +54,7 @@ public class AutoFitTextureView extends TextureView {
         if (width < 0 || height < 0) {
             throw new IllegalArgumentException("Size cannot be negative.");
         }
+        Logger.d("new width: %d, height: %d", width, height);
         mRatioWidth = width;
         mRatioHeight = height;
         requestLayout();

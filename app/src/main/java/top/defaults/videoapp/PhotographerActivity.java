@@ -5,6 +5,7 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Size;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -21,11 +22,16 @@ import top.defaults.video.Error;
 import top.defaults.video.Keys;
 import top.defaults.video.Photographer;
 import top.defaults.video.PhotographerFactory;
+import top.defaults.videoapp.dialog.PickerDialog;
+import top.defaults.videoapp.dialog.SimplePickerDialog;
+import top.defaults.videoapp.options.VideoSize;
 
 public class PhotographerActivity extends AppCompatActivity {
 
+    Photographer photographer;
     private boolean isRecordingVideo;
     private int lensFacing = CameraCharacteristics.LENS_FACING_BACK;
+    private Size[] videoSizes;
 
     @BindView(R.id.texture)
     AutoFitTextureView textureView;
@@ -35,6 +41,26 @@ public class PhotographerActivity extends AppCompatActivity {
 
     @BindView(R.id.video)
     Button videoButton;
+
+    @OnClick(R.id.chooseVideoSize)
+    void chooseVideoSize() {
+        if (videoSizes != null && videoSizes.length > 0) {
+            SimplePickerDialog<VideoSize> dialog = SimplePickerDialog.create(new PickerDialog.ActionListener<VideoSize>() {
+                @Override
+                public void onCancelClick(PickerDialog<VideoSize> dialog) {
+
+                }
+
+                @Override
+                public void onDoneClick(PickerDialog<VideoSize> dialog) {
+                    VideoSize videoSize = dialog.getSelectedItem(VideoSize.class);
+                    photographer.setVideoSize(videoSize.size);
+                }
+            });
+            dialog.setItems(VideoSize.supportedSizes(videoSizes));
+            dialog.show(getFragmentManager(), "videoSize");
+        }
+    }
 
     @OnClick(R.id.video)
     void video() {
@@ -64,8 +90,6 @@ public class PhotographerActivity extends AppCompatActivity {
         photographer.startPreview(Collections.singletonMap(Keys.LENS_FACING, lensFacing));
     }
 
-    Photographer photographer;
-
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -73,6 +97,21 @@ public class PhotographerActivity extends AppCompatActivity {
         ButterKnife.bind(this);
         photographer = PhotographerFactory.createPhotographerWithCamera2(this, textureView);
         photographer.setOnEventListener(new Photographer.OnEventListener() {
+            @Override
+            public void onDeviceConfigured() {
+                videoSizes = photographer.getSupportedRecordSize();
+            }
+
+            @Override
+            public void onPreviewStarted() {
+
+            }
+
+            @Override
+            public void onPreviewStopped() {
+
+            }
+
             @Override
             public void onStartRecording() {
                 isRecordingVideo = true;

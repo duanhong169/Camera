@@ -43,11 +43,14 @@ import top.defaults.logger.Logger;
 
 public class Camera2Photographer implements InternalPhotographer {
 
-    private static final int CALLBACK_ON_START_RECORDING = 1;
-    private static final int CALLBACK_ON_PAUSE_RECORDING = 2;
-    private static final int CALLBACK_ON_RESUME_RECORDING = 3;
-    private static final int CALLBACK_ON_STOP_RECORDING = 4;
-    private static final int CALLBACK_ON_ERROR = 6;
+    private static final int CALLBACK_ON_DEVICE_CONFIGURED = 1;
+    private static final int CALLBACK_ON_PREVIEW_STARTED = 2;
+    private static final int CALLBACK_ON_PREVIEW_STOPPED = 3;
+    private static final int CALLBACK_ON_START_RECORDING = 4;
+    private static final int CALLBACK_ON_PAUSE_RECORDING = 5;
+    private static final int CALLBACK_ON_RESUME_RECORDING = 6;
+    private static final int CALLBACK_ON_STOP_RECORDING = 7;
+    private static final int CALLBACK_ON_ERROR = 8;
 
     private Activity activityContext;
     private AutoFitTextureView textureView;
@@ -58,6 +61,7 @@ public class Camera2Photographer implements InternalPhotographer {
     private Handler backgroundHandler;
     private int lensFacing;
     private Size previewSize;
+    private Size[] supportedVideoSizes;
     private Size videoSize;
     private Semaphore cameraOpenCloseLock = new Semaphore(1);
     private Integer sensorOrientation;
@@ -116,6 +120,11 @@ public class Camera2Photographer implements InternalPhotographer {
     }
 
     @Override
+    public Size[] getSupportedRecordSize() {
+        return supportedVideoSizes;
+    }
+
+    @Override
     public void startPreview(Map<String, Object> params) {
         throwIfNotInitialized();
         for (String permission: RECORD_VIDEO_PERMISSIONS) {
@@ -126,7 +135,14 @@ public class Camera2Photographer implements InternalPhotographer {
             }
         }
 
-        lensFacing = Utils.getInt(params, Keys.LENS_FACING, CameraCharacteristics.LENS_FACING_BACK);
+        if (params != null) {
+            int newLensFacing = Utils.getInt(params, Keys.LENS_FACING, CameraCharacteristics.LENS_FACING_BACK);
+            if (newLensFacing != lensFacing) {
+                lensFacing = newLensFacing;
+                // clear the video size
+                videoSize = null;
+            }
+        }
         startBackgroundThread();
         if (textureView.isAvailable()) {
             openCamera(textureView.getWidth(), textureView.getHeight());
@@ -140,6 +156,13 @@ public class Camera2Photographer implements InternalPhotographer {
         throwIfNotInitialized();
         closeCamera();
         stopBackgroundThread();
+    }
+
+    @Override
+    public void setVideoSize(Size size) {
+        videoSize = size;
+        stopPreview();
+        startPreview(null);
     }
 
     @Override
@@ -305,6 +328,7 @@ public class Camera2Photographer implements InternalPhotographer {
             cameraOpenCloseLock.release();
             cameraDevice.close();
             Camera2Photographer.this.cameraDevice = null;
+            callbackHandler.onPreviewStopped();
         }
 
         @Override
@@ -364,6 +388,7 @@ public class Camera2Photographer implements InternalPhotographer {
                         public void onConfigured(@NonNull CameraCaptureSession session) {
                             previewSession = session;
                             updatePreview();
+                            callbackHandler.onPreviewStarted();
                         }
 
                         @Override
@@ -417,7 +442,10 @@ public class Camera2Photographer implements InternalPhotographer {
                 if (map == null) {
                     throw new RuntimeException("Cannot get available preview/video sizes");
                 }
-                videoSize = chooseVideoSize(map.getOutputSizes(MediaRecorder.class));
+                supportedVideoSizes = map.getOutputSizes(MediaRecorder.class);
+                if (videoSize == null) {
+                    videoSize = chooseVideoSize(supportedVideoSizes);
+                }
                 previewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
                         width, height, videoSize);
 
@@ -428,6 +456,9 @@ public class Camera2Photographer implements InternalPhotographer {
                     textureView.setAspectRatio(previewSize.getHeight(), previewSize.getWidth());
                 }
                 configureTransform(width, height);
+
+                callbackHandler.onDeviceConfigured();
+
                 mediaRecorder = new MediaRecorder();
                 manager.openCamera(cameraId, stateCallback, null);
             }
@@ -444,7 +475,7 @@ public class Camera2Photographer implements InternalPhotographer {
 
     private static Size chooseVideoSize(Size[] choices) {
         for (Size size : choices) {
-            if (size.getWidth() == size.getHeight() * 4 / 3 && size.getWidth() <= 1080) {
+            if (size.getWidth() == size.getHeight() * 4 / 3 && size.getHeight() <= 1080) {
                 return size;
             }
         }
@@ -550,6 +581,15 @@ public class Camera2Photographer implements InternalPhotographer {
             }
             Logger.d("handleMessage: " + msg.what);
             switch (msg.what) {
+                case CALLBACK_ON_DEVICE_CONFIGURED:
+                    onEventListener.onDeviceConfigured();
+                    break;
+                case CALLBACK_ON_PREVIEW_STARTED:
+                    onEventListener.onPreviewStarted();
+                    break;
+                case CALLBACK_ON_PREVIEW_STOPPED:
+                    onEventListener.onPreviewStopped();
+                    break;
                 case CALLBACK_ON_START_RECORDING:
                     onEventListener.onStartRecording();
                     break;
@@ -568,6 +608,18 @@ public class Camera2Photographer implements InternalPhotographer {
                 default:
                     break;
             }
+        }
+
+        void onDeviceConfigured() {
+            Message.obtain(this, CALLBACK_ON_DEVICE_CONFIGURED).sendToTarget();
+        }
+
+        void onPreviewStarted() {
+            Message.obtain(this, CALLBACK_ON_PREVIEW_STARTED).sendToTarget();
+        }
+
+        void onPreviewStopped() {
+            Message.obtain(this, CALLBACK_ON_PREVIEW_STOPPED).sendToTarget();
         }
 
         void onStartRecording() {

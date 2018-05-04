@@ -9,4 +9,5 @@
     <string name="finish">Finish</string>
     <string name="flip">Flip</string>
     <string name="play_file">Play[%s]</string>
+    <string name="done">Done</string>
 </resources>

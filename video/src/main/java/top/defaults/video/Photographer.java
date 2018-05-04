@@ -2,14 +2,19 @@ package top.defaults.video;
 
 import android.media.MediaRecorder;
 import android.support.annotation.Nullable;
+import android.util.Size;
 
 import java.util.Map;
 
 public interface Photographer {
 
+    Size[] getSupportedRecordSize();
+
     void startPreview(Map<String, Object> params);
 
     void stopPreview();
+
+    void setVideoSize(Size size);
 
     void startRecording(@Nullable MediaRecorderConfigurator configurator);
 
@@ -65,6 +70,12 @@ public interface Photographer {
     void setOnEventListener(OnEventListener listener);
 
     interface OnEventListener {
+
+        void onDeviceConfigured();
+
+        void onPreviewStarted();
+
+        void onPreviewStopped();
 
         void onStartRecording();
 
