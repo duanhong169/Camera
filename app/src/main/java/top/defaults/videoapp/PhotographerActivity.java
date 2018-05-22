@@ -12,9 +12,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.Collections;
+import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import butterknife.OnCheckedChanged;
 import butterknife.OnClick;
 import timber.log.Timber;
 import top.defaults.video.AutoFitTextureView;
@@ -32,6 +34,7 @@ public class PhotographerActivity extends AppCompatActivity {
     private boolean isRecordingVideo;
     private int lensFacing = CameraCharacteristics.LENS_FACING_BACK;
     private Size[] videoSizes;
+    private VideoSize selectedSize;
 
     @BindView(R.id.texture)
     AutoFitTextureView textureView;
@@ -54,12 +57,20 @@ public class PhotographerActivity extends AppCompatActivity {
                 @Override
                 public void onDoneClick(PickerDialog<VideoSize> dialog) {
                     VideoSize videoSize = dialog.getSelectedItem(VideoSize.class);
+                    selectedSize = videoSize;
                     photographer.setVideoSize(videoSize.size);
                 }
             });
-            dialog.setItems(VideoSize.supportedSizes(videoSizes));
+            List<VideoSize> supportedSizes = VideoSize.supportedSizes(videoSizes);
+            dialog.setItems(supportedSizes);
+            dialog.setInitialItem(VideoSize.findEqual(supportedSizes, selectedSize));
             dialog.show(getFragmentManager(), "videoSize");
         }
+    }
+
+    @OnCheckedChanged(R.id.fillSpace)
+    void onFillSpaceChecked(boolean checked) {
+        textureView.setFillSpace(checked);
     }
 
     @OnClick(R.id.video)

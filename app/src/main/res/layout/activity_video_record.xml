@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/activity_main"
     android:layout_width="match_parent"
@@ -11,8 +10,7 @@
         android:id="@+id/texture"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true" />
+        android:layout_centerInParent="true"/>
 
     <TextView
         android:id="@+id/status"
@@ -60,13 +58,26 @@
 
     </RelativeLayout>
 
-    <ImageView
-        android:id="@+id/chooseVideoSize"
+    <LinearLayout
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:padding="8dp"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
         android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true"
-        android:src="@drawable/screen_resolution"/>
+        android:layout_alignParentTop="true">
+
+        <ImageView
+            android:id="@+id/chooseVideoSize"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:src="@drawable/screen_resolution"/>
+
+        <CheckBox
+            android:id="@+id/fillSpace"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/fill"
+            android:textColor="#ffffff"/>
+    </LinearLayout>
 
 </RelativeLayout>

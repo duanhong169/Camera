@@ -27,4 +27,16 @@ public class VideoSize implements PickerView.PickerItem {
         }
         return videoSizes;
     }
+
+    public static VideoSize findEqual(List<VideoSize> videoSizes, VideoSize target) {
+        if (videoSizes == null || target == null) return null;
+
+        for (VideoSize videoSize: videoSizes) {
+            if (videoSize.size.equals(target.size)) {
+                return videoSize;
+            }
+        }
+
+        return null;
+    }
 }

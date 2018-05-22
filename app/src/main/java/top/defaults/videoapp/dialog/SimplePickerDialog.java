@@ -16,6 +16,7 @@ public class SimplePickerDialog<T extends PickerView.PickerItem> extends PickerD
     private ActionListener<T> actionListener;
     private PickerView pickerView;
     private List<T> items;
+    private T initialItem;
 
     public static <T extends PickerView.PickerItem> SimplePickerDialog<T> create(ActionListener<T> actionListener) {
         SimplePickerDialog<T> dialog = new SimplePickerDialog<>();
@@ -27,6 +28,10 @@ public class SimplePickerDialog<T extends PickerView.PickerItem> extends PickerD
         this.items = items;
     }
 
+    public void setInitialItem(T item) {
+        initialItem = item;
+    }
+
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, Bundle savedInstanceState) {
@@ -34,6 +39,7 @@ public class SimplePickerDialog<T extends PickerView.PickerItem> extends PickerD
 
         pickerView = view.findViewById(R.id.pickerView);
         pickerView.setItems(items, null);
+        pickerView.setSelectedItemPosition(items.indexOf(initialItem));
 
         attachActions(view.findViewById(R.id.done), view.findViewById(R.id.cancel));
         return view;

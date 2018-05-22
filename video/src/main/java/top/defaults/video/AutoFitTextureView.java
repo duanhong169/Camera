@@ -17,6 +17,7 @@
 package top.defaults.video;
 
 import android.content.Context;
+import android.content.res.TypedArray;
 import android.util.AttributeSet;
 import android.view.TextureView;
 
@@ -27,8 +28,9 @@ import top.defaults.logger.Logger;
  */
 public class AutoFitTextureView extends TextureView {
 
-    private int mRatioWidth = 0;
-    private int mRatioHeight = 0;
+    private int ratioWidth = 0;
+    private int ratioHeight = 0;
+    private boolean fillSpace = false;
 
     public AutoFitTextureView(Context context) {
         this(context, null);
@@ -40,6 +42,10 @@ public class AutoFitTextureView extends TextureView {
 
     public AutoFitTextureView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
+
+        TypedArray typedArray = context.obtainStyledAttributes(attrs, R.styleable.AutoFitTextureView);
+        fillSpace = typedArray.getBoolean(R.styleable.AutoFitTextureView_fillSpace, false);
+        typedArray.recycle();
     }
 
     /**
@@ -55,8 +61,13 @@ public class AutoFitTextureView extends TextureView {
             throw new IllegalArgumentException("Size cannot be negative.");
         }
         Logger.d("new width: %d, height: %d", width, height);
-        mRatioWidth = width;
-        mRatioHeight = height;
+        ratioWidth = width;
+        ratioHeight = height;
+        requestLayout();
+    }
+
+    public void setFillSpace(boolean fillSpace) {
+        this.fillSpace = fillSpace;
         requestLayout();
     }
 
@@ -65,13 +76,21 @@ public class AutoFitTextureView extends TextureView {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         int width = MeasureSpec.getSize(widthMeasureSpec);
         int height = MeasureSpec.getSize(heightMeasureSpec);
-        if (0 == mRatioWidth || 0 == mRatioHeight) {
+        if (0 == ratioWidth || 0 == ratioHeight) {
             setMeasuredDimension(width, height);
         } else {
-            if (width < height * mRatioWidth / mRatioHeight) {
-                setMeasuredDimension(width, width * mRatioHeight / mRatioWidth);
+            if (fillSpace) {
+                if (width < height * ratioWidth / ratioHeight) {
+                    setMeasuredDimension(height * ratioWidth / ratioHeight, height);
+                } else {
+                    setMeasuredDimension(width, width * ratioHeight / ratioWidth);
+                }
             } else {
-                setMeasuredDimension(height * mRatioWidth / mRatioHeight, height);
+                if (width < height * ratioWidth / ratioHeight) {
+                    setMeasuredDimension(width, width * ratioHeight / ratioWidth);
+                } else {
+                    setMeasuredDimension(height * ratioWidth / ratioHeight, height);
+                }
             }
         }
     }
