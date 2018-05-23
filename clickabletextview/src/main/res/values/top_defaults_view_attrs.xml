@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="ClickableTextView">
+        <attr name="defaultTextColor" format="color"/>
+        <attr name="pressedTextColor" format="color"/>
+        <attr name="disabledTextColor" format="color"/>
+        <attr name="underline" format="boolean"/>
+    </declare-styleable>
+</resources>

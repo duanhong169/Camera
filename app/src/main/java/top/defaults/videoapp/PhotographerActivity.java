@@ -1,6 +1,7 @@
 package top.defaults.videoapp;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.hardware.camera2.CameraCharacteristics;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -105,6 +106,7 @@ public class PhotographerActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_video_record);
+        getWindow().getDecorView().setBackgroundColor(Color.BLACK);
         ButterKnife.bind(this);
         photographer = PhotographerFactory.createPhotographerWithCamera2(this, textureView);
         photographer.setOnEventListener(new Photographer.OnEventListener() {
