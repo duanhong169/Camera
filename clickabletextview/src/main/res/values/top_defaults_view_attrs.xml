@@ -5,5 +5,9 @@
         <attr name="pressedTextColor" format="color"/>
         <attr name="disabledTextColor" format="color"/>
         <attr name="underline" format="boolean"/>
+        <attr name="effect" format="enum">
+            <enum name="defaultEffect" value="0"/>
+            <enum name="animateTextColor" value="1"/>
+        </attr>
     </declare-styleable>
 </resources>

@@ -42,7 +42,9 @@
             android:layout_height="wrap_content"
             android:padding="8dp"
             android:text="@string/video_size"
-            app:underline="true"/>
+            android:textSize="32sp"
+            app:underline="true"
+            app:effect="defaultEffect"/>
 
         <CheckBox
             android:id="@+id/fillSpace"
