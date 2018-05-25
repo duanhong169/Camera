@@ -8,6 +8,7 @@ import android.graphics.Rect;
 import android.support.annotation.ColorInt;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
+import android.view.Gravity;
 import android.view.MotionEvent;
 
 import top.defaults.logger.Logger;
@@ -15,7 +16,7 @@ import top.defaults.view.clickabletextview.R;
 
 import static top.defaults.view.TextViewEffect.EFFECT_DEFAULT;
 
-public class ClickableTextView extends android.support.v7.widget.AppCompatTextView {
+public class TextButton extends android.support.v7.widget.AppCompatTextView {
 
     @ColorInt int defaultTextColor;
     @ColorInt int pressedTextColor;
@@ -26,23 +27,23 @@ public class ClickableTextView extends android.support.v7.widget.AppCompatTextVi
 
     private Rect viewRect = new Rect();
 
-    public ClickableTextView(Context context) {
+    public TextButton(Context context) {
         this(context, null);
     }
 
-    public ClickableTextView(Context context, @Nullable AttributeSet attrs) {
+    public TextButton(Context context, @Nullable AttributeSet attrs) {
         this(context, attrs, 0);
     }
 
-    public ClickableTextView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
+    public TextButton(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
 
-        TypedArray typedArray = context.obtainStyledAttributes(attrs, R.styleable.ClickableTextView);
-        defaultTextColor = typedArray.getColor(R.styleable.ClickableTextView_defaultTextColor, getCurrentTextColor());
-        pressedTextColor = typedArray.getColor(R.styleable.ClickableTextView_defaultTextColor, calculatePressedColor(defaultTextColor));
-        disabledTextColor = typedArray.getColor(R.styleable.ClickableTextView_defaultTextColor, calculateDisabledColor(getCurrentTextColor()));
-        isUnderlined = typedArray.getBoolean(R.styleable.ClickableTextView_underline, false);
-        effectType = typedArray.getInt(R.styleable.ClickableTextView_effect, EFFECT_DEFAULT);
+        TypedArray typedArray = context.obtainStyledAttributes(attrs, R.styleable.TextButton);
+        defaultTextColor = typedArray.getColor(R.styleable.TextButton_defaultTextColor, getCurrentTextColor());
+        pressedTextColor = typedArray.getColor(R.styleable.TextButton_defaultTextColor, calculatePressedColor(defaultTextColor));
+        disabledTextColor = typedArray.getColor(R.styleable.TextButton_defaultTextColor, calculateDisabledColor(getCurrentTextColor()));
+        isUnderlined = typedArray.getBoolean(R.styleable.TextButton_underline, false);
+        effectType = typedArray.getInt(R.styleable.TextButton_effect, EFFECT_DEFAULT);
         typedArray.recycle();
 
         apply();
@@ -55,6 +56,8 @@ public class ClickableTextView extends android.support.v7.widget.AppCompatTextVi
         if (isUnderlined) {
             setPaintFlags(getPaintFlags() | Paint.UNDERLINE_TEXT_FLAG);
         }
+
+        setGravity(Gravity.CENTER);
     }
 
     private int calculatePressedColor(@ColorInt int defaultColor) {

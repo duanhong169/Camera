@@ -6,17 +6,19 @@ import android.animation.ValueAnimator;
 public class AnimateTextColorEffect implements TextViewEffect {
 
     private ValueAnimator pressColorAnimation;
-    private ClickableTextView clickableTextView;
+    private TextButton textButton;
 
     @Override
-    public void init(ClickableTextView clickableTextView) {
-        this.clickableTextView = clickableTextView;
+    public void init(TextButton textButton) {
+        this.textButton = textButton;
         pressColorAnimation = ValueAnimator.ofObject(new ArgbEvaluator(),
-                clickableTextView.defaultTextColor, clickableTextView.pressedTextColor);
+                textButton.defaultTextColor, textButton.pressedTextColor);
+        EffectSettings.apply(pressColorAnimation);
+
         pressColorAnimation.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
-                AnimateTextColorEffect.this.clickableTextView
+                AnimateTextColorEffect.this.textButton
                         .setTextColor((Integer) animation.getAnimatedValue());
             }
         });
@@ -29,7 +31,7 @@ public class AnimateTextColorEffect implements TextViewEffect {
 
     @Override
     public void actionUp() {
-        clickableTextView.postDelayed(new Runnable() {
+        textButton.postDelayed(new Runnable() {
             @Override
             public void run() {
                 pressColorAnimation.reverse();

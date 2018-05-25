@@ -6,8 +6,10 @@ public interface TextViewEffect {
 
     int EFFECT_DEFAULT = 0;
     int EFFECT_ANIMATE_TEXT_COLOR = 1;
+    int EFFECT_ANIMATE_TEXT_SIZE = 2;
+    int EFFECT_ANIMATE_TEXT_COLOR_AND_SIZE = 3;
 
-    void init(ClickableTextView clickableTextView);
+    void init(TextButton textButton);
 
     void actionDown();
 
@@ -19,6 +21,31 @@ public interface TextViewEffect {
             switch (type) {
                 case EFFECT_ANIMATE_TEXT_COLOR:
                     return new AnimateTextColorEffect();
+                case EFFECT_ANIMATE_TEXT_SIZE:
+                    return new AnimateTextSizeEffect();
+                case EFFECT_ANIMATE_TEXT_COLOR_AND_SIZE:
+                    return new TextViewEffect() {
+                        AnimateTextColorEffect colorEffect = new AnimateTextColorEffect();
+                        AnimateTextSizeEffect sizeEffect = new AnimateTextSizeEffect();
+
+                        @Override
+                        public void init(TextButton textButton) {
+                            colorEffect.init(textButton);
+                            sizeEffect.init(textButton);
+                        }
+
+                        @Override
+                        public void actionDown() {
+                            colorEffect.actionDown();
+                            sizeEffect.actionDown();
+                        }
+
+                        @Override
+                        public void actionUp() {
+                            colorEffect.actionUp();
+                            sizeEffect.actionUp();
+                        }
+                    };
                 default:
                     return new DefaultEffect();
             }
@@ -28,7 +55,7 @@ public interface TextViewEffect {
     class DefaultEffect implements TextViewEffect {
 
         @Override
-        public void init(ClickableTextView clickableTextView) {
+        public void init(TextButton textButton) {
             ColorStateList colorStateList = new ColorStateList(
                     new int[][]{
                             new int[]{ android.R.attr.state_pressed },
@@ -36,12 +63,12 @@ public interface TextViewEffect {
                             new int[]{} // this should be empty to make default color as we want
                     },
                     new int[]{
-                            clickableTextView.pressedTextColor,
-                            clickableTextView.disabledTextColor,
-                            clickableTextView.defaultTextColor
+                            textButton.pressedTextColor,
+                            textButton.disabledTextColor,
+                            textButton.defaultTextColor
                     }
             );
-            clickableTextView.setTextColor(colorStateList);
+            textButton.setTextColor(colorStateList);
         }
 
         @Override
