@@ -42,9 +42,8 @@
             android:layout_height="wrap_content"
             android:padding="8dp"
             android:text="@string/video_size"
-            android:textSize="32sp"
             app:underline="true"
-            app:effect="animateTextColorAndSize"/>
+            app:effect="animateTextSize"/>
 
         <CheckBox
             android:id="@+id/fillSpace"
