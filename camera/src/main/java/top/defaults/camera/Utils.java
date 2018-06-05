@@ -1,11 +1,11 @@
-package top.defaults.video;
+package top.defaults.camera;
 
 import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static top.defaults.video.Error.ERROR_DEFAULT_CODE;
+import static top.defaults.camera.Error.ERROR_DEFAULT_CODE;
 
 class Utils {
 

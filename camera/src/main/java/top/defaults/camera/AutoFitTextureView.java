@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package top.defaults.video;
+package top.defaults.camera;
 
 import android.content.Context;
 import android.content.res.TypedArray;

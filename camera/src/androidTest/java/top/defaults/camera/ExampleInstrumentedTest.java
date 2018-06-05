@@ -1,4 +1,4 @@
-package top.defaults.video;
+package top.defaults.camera;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;

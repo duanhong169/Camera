@@ -1,4 +1,4 @@
-package top.defaults.video;
+package top.defaults.camera;
 
 import org.junit.Test;
 

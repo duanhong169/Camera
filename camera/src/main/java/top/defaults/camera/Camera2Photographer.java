@@ -1,4 +1,4 @@
-package top.defaults.video;
+package top.defaults.camera;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
