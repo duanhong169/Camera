@@ -43,7 +43,7 @@
             android:padding="8dp"
             android:text="@string/video_size"
             app:underline="true"
-            app:effect="animateTextSize"/>
+            app:textEffect="animateSize"/>
 
         <CheckBox
             android:id="@+id/fillSpace"
@@ -62,26 +62,32 @@
         android:background="#7fffffff"
         android:fitsSystemWindows="true">
 
-        <Button
+        <top.defaults.view.TextButton
             android:id="@+id/video"
             android:layout_width="wrap_content"
-            android:layout_height="70dp"
+            android:layout_height="64dp"
             android:layout_centerHorizontal="true"
+            android:padding="16dp"
+            android:textColor="@android:color/white"
             android:text="@string/record"/>
 
-        <Button
+        <top.defaults.view.TextButton
             android:id="@+id/cancel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
+            android:padding="16dp"
+            android:textColor="@android:color/white"
             android:text="@string/cancel" />
 
-        <Button
+        <top.defaults.view.TextButton
             android:id="@+id/flip"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:layout_alignParentEnd="true"
+            android:padding="16dp"
+            android:textColor="@android:color/white"
             android:text="@string/flip" />
 
     </RelativeLayout>

@@ -32,7 +32,7 @@ dependencies {
     implementation 'com.jakewharton.timber:timber:4.6.0'
     implementation 'com.tbruyelle.rxpermissions2:rxpermissions:0.9.5@aar'
     implementation 'com.github.duanhong169:picker-view:0.3.1'
-    implementation 'com.github.duanhong169:text-button:1.0.1'
+    implementation 'com.github.duanhong169:text-button:1.0.3'
     annotationProcessor 'com.jakewharton:butterknife-compiler:8.7.0'
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'

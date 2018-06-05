@@ -11,13 +11,13 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <Button
+        <top.defaults.view.TextButton
             android:id="@+id/prepare_to_record"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="16dp"
+            android:layout_margin="8dp"
             android:gravity="center"
-            android:padding="16dp"
+            android:padding="8dp"
             android:text="@string/record_video" />
 
         <LinearLayout
@@ -28,20 +28,20 @@
             android:visibility="gone"
             tools:visibility="visible">
 
-            <Button
+            <top.defaults.view.TextButton
                 android:id="@+id/play"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_margin="16dp"
+                android:layout_margin="8dp"
                 android:gravity="center"
-                android:padding="16dp"
+                android:padding="8dp"
                 android:text="@string/play"/>
 
             <TextView
                 android:id="@+id/file_info"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_margin="16dp"/>
+                android:layout_margin="8dp"/>
 
         </LinearLayout>
 

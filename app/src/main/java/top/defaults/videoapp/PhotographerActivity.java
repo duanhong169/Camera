@@ -8,7 +8,6 @@ import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Size;
 import android.view.View;
-import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -28,6 +27,7 @@ import top.defaults.video.PhotographerFactory;
 import top.defaults.videoapp.dialog.PickerDialog;
 import top.defaults.videoapp.dialog.SimplePickerDialog;
 import top.defaults.videoapp.options.VideoSize;
+import top.defaults.view.TextButton;
 
 public class PhotographerActivity extends AppCompatActivity {
 
@@ -44,7 +44,7 @@ public class PhotographerActivity extends AppCompatActivity {
     TextView statusTextView;
 
     @BindView(R.id.video)
-    Button videoButton;
+    TextButton videoButton;
 
     @OnClick(R.id.chooseVideoSize)
     void chooseVideoSize() {
