@@ -25,7 +25,9 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".PhotographerActivity"/>
+        <activity
+            android:name=".PhotographerActivity"
+            android:theme="@style/Theme.AppCompat.NoActionBar"/>
 
         <provider
             android:name="android.support.v4.content.FileProvider"

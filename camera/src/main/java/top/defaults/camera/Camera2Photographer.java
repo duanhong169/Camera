@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Matrix;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
@@ -15,7 +16,10 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
+import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
+import android.hardware.camera2.TotalCaptureResult;
+import android.hardware.camera2.params.MeteringRectangle;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.MediaRecorder;
 import android.os.Build;
@@ -26,6 +30,7 @@ import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
 import android.util.Size;
 import android.util.SparseIntArray;
+import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.TextureView;
 
@@ -56,6 +61,7 @@ public class Camera2Photographer implements InternalPhotographer {
     private AutoFitTextureView textureView;
     private CallbackHandler callbackHandler;
     private boolean isInitialized;
+    private boolean isManualFocusEngaged;
 
     private HandlerThread backgroundThread;
     private Handler backgroundHandler;
@@ -69,9 +75,11 @@ public class Camera2Photographer implements InternalPhotographer {
     private MediaRecorder mediaRecorder;
     private CameraCaptureSession previewSession;
     private CaptureRequest.Builder previewBuilder;
+    private CameraCharacteristics characteristics;
     private String nextVideoAbsolutePath;
     private boolean isRecordingVideo;
 
+    private static final int FOCUS_AREA_SIZE = 150;
     private static final int SENSOR_ORIENTATION_DEFAULT_DEGREES = 90;
     private static final int SENSOR_ORIENTATION_INVERSE_DEGREES = 270;
     private static final SparseIntArray DEFAULT_ORIENTATIONS = new SparseIntArray();
@@ -367,6 +375,7 @@ public class Camera2Photographer implements InternalPhotographer {
 
     };
 
+    @SuppressLint("ClickableViewAccessibility")
     private void realStartPreview() {
         if (cameraDevice == null || !textureView.isAvailable() || previewSize == null) {
             return;
@@ -380,6 +389,121 @@ public class Camera2Photographer implements InternalPhotographer {
 
             Surface previewSurface = new Surface(texture);
             previewBuilder.addTarget(previewSurface);
+
+            textureView.setOnTouchListener((v, event) -> {
+                final int actionMasked = event.getActionMasked();
+                if (actionMasked != MotionEvent.ACTION_DOWN) {
+                    return false;
+                }
+                if (isManualFocusEngaged) {
+                    Logger.d("Manual focus already engaged");
+                    return true;
+                }
+
+                final Rect sensorArraySize = characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
+                if (sensorArraySize == null) return false;
+                int rotation = activityContext.getWindowManager().getDefaultDisplay().getRotation();
+
+                final int x;
+                final int y;
+
+                int degree = DEFAULT_ORIENTATIONS.get(rotation);
+                switch (sensorOrientation) {
+                    case SENSOR_ORIENTATION_DEFAULT_DEGREES:
+                        degree = DEFAULT_ORIENTATIONS.get(rotation);
+                        break;
+                    case SENSOR_ORIENTATION_INVERSE_DEGREES:
+                        degree = INVERSE_ORIENTATIONS.get(rotation);
+                        break;
+                }
+
+                switch (degree) {
+                    case 0:
+                        x = (int)((event.getX() / (float)v.getWidth())  * (float)sensorArraySize.width());
+                        y = (int)((event.getY() / (float)v.getHeight()) * (float)sensorArraySize.height());
+                        break;
+                    case 180:
+                        x = (int)((1 - (event.getX() / (float)v.getWidth()))  * (float)sensorArraySize.width());
+                        y = (int)((1 - (event.getY() / (float)v.getHeight())) * (float)sensorArraySize.height());
+                        break;
+                    case 270:
+                        x = (int)((1- (event.getY() / (float)v.getHeight())) * (float)sensorArraySize.width());
+                        y = (int)((event.getX() / (float)v.getWidth())  * (float)sensorArraySize.height());
+                        break;
+                    case 90:
+                    default:
+                        x = (int)((event.getY() / (float)v.getHeight()) * (float)sensorArraySize.width());
+                        y = (int)((1 - (event.getX() / (float)v.getWidth()))  * (float)sensorArraySize.height());
+                        break;
+                }
+
+                MeteringRectangle focusAreaTouch = new MeteringRectangle(Math.max(x - FOCUS_AREA_SIZE,  0),
+                        Math.max(y - FOCUS_AREA_SIZE, 0),
+                        FOCUS_AREA_SIZE  * 2,
+                        FOCUS_AREA_SIZE * 2,
+                        MeteringRectangle.METERING_WEIGHT_MAX - 1);
+
+                CameraCaptureSession.CaptureCallback captureCallbackHandler = new CameraCaptureSession.CaptureCallback() {
+                    @Override
+                    public void onCaptureCompleted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull TotalCaptureResult result) {
+                        super.onCaptureCompleted(session, request, result);
+                        isManualFocusEngaged = false;
+
+                        if (request.getTag() == "FOCUS_TAG") {
+                            //the focus trigger is complete -
+                            //resume repeating (preview surface will get frames), clear AF trigger
+                            previewBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, null);
+                            try {
+                                previewSession.setRepeatingRequest(previewBuilder.build(), null, null);
+                            } catch (CameraAccessException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onCaptureFailed(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull CaptureFailure failure) {
+                        super.onCaptureFailed(session, request, failure);
+                        Logger.e("Manual AF failure: " + failure);
+                        isManualFocusEngaged = false;
+                    }
+                };
+
+                try {
+                    previewSession.stopRepeating();
+                } catch (CameraAccessException e) {
+                    e.printStackTrace();
+                }
+
+                // cancel any existing AF trigger (repeated touches, etc.)
+                previewBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, CameraMetadata.CONTROL_AF_TRIGGER_CANCEL);
+                previewBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF);
+                try {
+                    previewSession.capture(previewBuilder.build(), captureCallbackHandler, backgroundHandler);
+                } catch (CameraAccessException e) {
+                    e.printStackTrace();
+                }
+
+                // add a new AF trigger with focus region
+                Integer maxRegionsAf = characteristics.get(CameraCharacteristics.CONTROL_MAX_REGIONS_AF);
+                if (maxRegionsAf != null && maxRegionsAf >= 1) {
+                    previewBuilder.set(CaptureRequest.CONTROL_AF_REGIONS, new MeteringRectangle[]{focusAreaTouch});
+                }
+                previewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+                previewBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_AUTO);
+                previewBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, CameraMetadata.CONTROL_AF_TRIGGER_START);
+                previewBuilder.setTag("FOCUS_TAG"); //we'll capture this later for resuming the preview
+
+                // then we ask for a single request (not repeating!)
+                try {
+                    previewSession.capture(previewBuilder.build(), captureCallbackHandler, backgroundHandler);
+                } catch (CameraAccessException e) {
+                    e.printStackTrace();
+                }
+                isManualFocusEngaged = true;
+
+                return true;
+            });
 
             cameraDevice.createCaptureSession(Collections.singletonList(previewSurface),
                     new CameraCaptureSession.StateCallback() {
@@ -435,6 +559,7 @@ public class Camera2Photographer implements InternalPhotographer {
                     continue;
                 }
 
+                this.characteristics = characteristics;
                 // Choose the sizes for camera preview and video recording
                 StreamConfigurationMap map = characteristics
                         .get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
@@ -455,8 +580,6 @@ public class Camera2Photographer implements InternalPhotographer {
                 } else {
                     textureView.setAspectRatio(previewSize.getHeight(), previewSize.getWidth());
                 }
-                configureTransform(width, height);
-
                 callbackHandler.onDeviceConfigured();
 
                 mediaRecorder = new MediaRecorder();

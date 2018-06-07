@@ -106,7 +106,12 @@ public class PhotographerActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_video_record);
-        getWindow().getDecorView().setBackgroundColor(Color.BLACK);
+
+        View decorView = getWindow().getDecorView();
+        decorView.setBackgroundColor(Color.BLACK);
+        int uiOptions = View.SYSTEM_UI_FLAG_FULLSCREEN;
+        decorView.setSystemUiVisibility(uiOptions);
+
         ButterKnife.bind(this);
         photographer = PhotographerFactory.createPhotographerWithCamera2(this, textureView);
         photographer.setOnEventListener(new Photographer.OnEventListener() {
