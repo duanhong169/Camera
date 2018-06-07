@@ -1,4 +1,4 @@
-package top.defaults.videoapp.dialog;
+package top.defaults.cameraapp.dialog;
 
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -8,7 +8,7 @@ import android.view.ViewGroup;
 
 import java.util.List;
 
-import top.defaults.videoapp.R;
+import top.defaults.cameraapp.R;
 import top.defaults.view.PickerView;
 
 public class SimplePickerDialog<T extends PickerView.PickerItem> extends PickerDialog<T> {

@@ -1,4 +1,4 @@
-package top.defaults.videoapp;
+package top.defaults.cameraapp;
 
 import android.app.Application;
 

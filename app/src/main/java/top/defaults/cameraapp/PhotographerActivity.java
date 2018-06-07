@@ -1,4 +1,4 @@
-package top.defaults.videoapp;
+package top.defaults.cameraapp;
 
 import android.content.Intent;
 import android.graphics.Color;
@@ -24,9 +24,9 @@ import top.defaults.camera.Error;
 import top.defaults.camera.Keys;
 import top.defaults.camera.Photographer;
 import top.defaults.camera.PhotographerFactory;
-import top.defaults.videoapp.dialog.PickerDialog;
-import top.defaults.videoapp.dialog.SimplePickerDialog;
-import top.defaults.videoapp.options.VideoSize;
+import top.defaults.cameraapp.dialog.PickerDialog;
+import top.defaults.cameraapp.dialog.SimplePickerDialog;
+import top.defaults.cameraapp.options.VideoSize;
 import top.defaults.view.TextButton;
 
 public class PhotographerActivity extends AppCompatActivity {

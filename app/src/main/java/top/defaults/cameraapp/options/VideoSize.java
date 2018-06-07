@@ -1,4 +1,4 @@
-package top.defaults.videoapp.options;
+package top.defaults.cameraapp.options;
 
 import android.util.Size;
 

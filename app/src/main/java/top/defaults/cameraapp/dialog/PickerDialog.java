@@ -1,4 +1,4 @@
-package top.defaults.videoapp.dialog;
+package top.defaults.cameraapp.dialog;
 
 import android.app.DialogFragment;
 
