@@ -1,5 +1,6 @@
 package top.defaults.cameraapp.dialog;
 
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
@@ -8,6 +9,7 @@ import android.view.ViewGroup;
 
 import java.util.List;
 
+import timber.log.Timber;
 import top.defaults.cameraapp.R;
 import top.defaults.view.PickerView;
 
@@ -43,6 +45,13 @@ public class SimplePickerDialog<T extends PickerView.PickerItem> extends PickerD
 
         attachActions(view.findViewById(R.id.done), view.findViewById(R.id.cancel));
         return view;
+    }
+
+    @Override
+    public void onCancel(DialogInterface dialog) {
+        if (actionListener != null) {
+            actionListener.onCancelClick(this);
+        }
     }
 
     private void attachActions(View done, View cancel) {

@@ -37,14 +37,11 @@ public class PhotographerActivity extends AppCompatActivity {
     private Size[] videoSizes;
     private VideoSize selectedSize;
 
-    @BindView(R.id.texture)
-    AutoFitTextureView textureView;
-
-    @BindView(R.id.status)
-    TextView statusTextView;
-
-    @BindView(R.id.video)
-    TextButton videoButton;
+    @BindView(R.id.texture) AutoFitTextureView textureView;
+    @BindView(R.id.status) TextView statusTextView;
+    @BindView(R.id.video) TextButton videoButton;
+    @BindView(R.id.switch_mode) TextButton switchButton;
+    @BindView(R.id.flip) TextButton flipButton;
 
     @OnClick(R.id.chooseVideoSize)
     void chooseVideoSize() {
@@ -77,18 +74,19 @@ public class PhotographerActivity extends AppCompatActivity {
     @OnClick(R.id.video)
     void video() {
         if (isRecordingVideo) {
-            photographer.stopRecording();
-            statusTextView.setVisibility(View.INVISIBLE);
+            finishRecordingIfNeeded();
         } else {
             photographer.startRecording(null);
+            isRecordingVideo = true;
             videoButton.setEnabled(false);
+            switchButton.setVisibility(View.INVISIBLE);
+            flipButton.setVisibility(View.INVISIBLE);
         }
     }
 
-    @OnClick(R.id.cancel)
-    void cancel() {
-        photographer.stopRecording();
-        finish();
+    @OnClick(R.id.switch_mode)
+    void switchMode() {
+
     }
 
     @OnClick(R.id.flip)
@@ -106,11 +104,7 @@ public class PhotographerActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_video_record);
-
-        View decorView = getWindow().getDecorView();
-        decorView.setBackgroundColor(Color.BLACK);
-        int uiOptions = View.SYSTEM_UI_FLAG_FULLSCREEN;
-        decorView.setSystemUiVisibility(uiOptions);
+        enterFullscreen();
 
         ButterKnife.bind(this);
         photographer = PhotographerFactory.createPhotographerWithCamera2(this, textureView);
@@ -132,7 +126,6 @@ public class PhotographerActivity extends AppCompatActivity {
 
             @Override
             public void onStartRecording() {
-                isRecordingVideo = true;
                 videoButton.setEnabled(true);
                 videoButton.setText(R.string.finish);
                 statusTextView.setVisibility(View.VISIBLE);
@@ -149,13 +142,11 @@ public class PhotographerActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onStopRecording(String filePath) {
-                isRecordingVideo = false;
+            public void onFinishRecording(String filePath) {
                 Toast.makeText(PhotographerActivity.this, "File: " + filePath, Toast.LENGTH_SHORT).show();
                 Intent data = new Intent();
                 data.putExtra(MainActivity.EXTRA_RECORDED_VIDEO_FILE_PATH, filePath);
                 setResult(RESULT_OK, data);
-                finish();
             }
 
             @Override
@@ -173,7 +164,32 @@ public class PhotographerActivity extends AppCompatActivity {
 
     @Override
     protected void onPause() {
+        finishRecordingIfNeeded();
         photographer.stopPreview();
         super.onPause();
+    }
+
+    private void enterFullscreen() {
+        View decorView = getWindow().getDecorView();
+        decorView.setBackgroundColor(Color.BLACK);
+        int uiOptions = View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
+        decorView.setSystemUiVisibility(uiOptions);
+    }
+
+    private void finishRecordingIfNeeded() {
+        if (isRecordingVideo) {
+            isRecordingVideo = false;
+            photographer.finishRecording();
+            statusTextView.setVisibility(View.INVISIBLE);
+            switchButton.setVisibility(View.VISIBLE);
+            flipButton.setVisibility(View.VISIBLE);
+            videoButton.setEnabled(true);
+            videoButton.setText(R.string.record_video);
+        }
     }
 }

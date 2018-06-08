@@ -54,7 +54,7 @@ public class Camera2Photographer implements InternalPhotographer {
     private static final int CALLBACK_ON_START_RECORDING = 4;
     private static final int CALLBACK_ON_PAUSE_RECORDING = 5;
     private static final int CALLBACK_ON_RESUME_RECORDING = 6;
-    private static final int CALLBACK_ON_STOP_RECORDING = 7;
+    private static final int CALLBACK_ON_FINISH_RECORDING = 7;
     private static final int CALLBACK_ON_ERROR = 8;
 
     private Activity activityContext;
@@ -285,13 +285,13 @@ public class Camera2Photographer implements InternalPhotographer {
     }
 
     @Override
-    public void stopRecording() {
+    public void finishRecording() {
         if (!isRecordingVideo) return;
         throwIfNoMediaRecorder();
         isRecordingVideo = false;
         mediaRecorder.stop();
         mediaRecorder.reset();
-        callbackHandler.onStopRecording(nextVideoAbsolutePath);
+        callbackHandler.onFinishRecording(nextVideoAbsolutePath);
         nextVideoAbsolutePath = null;
         realStartPreview();
     }
@@ -722,8 +722,8 @@ public class Camera2Photographer implements InternalPhotographer {
                 case CALLBACK_ON_RESUME_RECORDING:
                     onEventListener.onResumeRecording();
                     break;
-                case CALLBACK_ON_STOP_RECORDING:
-                    onEventListener.onStopRecording((String) msg.obj);
+                case CALLBACK_ON_FINISH_RECORDING:
+                    onEventListener.onFinishRecording((String) msg.obj);
                     break;
                 case CALLBACK_ON_ERROR:
                     onEventListener.onError((Error) msg.obj);
@@ -757,8 +757,8 @@ public class Camera2Photographer implements InternalPhotographer {
             Message.obtain(this, CALLBACK_ON_RESUME_RECORDING).sendToTarget();
         }
 
-        void onStopRecording(String filePath) {
-            Message.obtain(this, CALLBACK_ON_STOP_RECORDING, filePath).sendToTarget();
+        void onFinishRecording(String filePath) {
+            Message.obtain(this, CALLBACK_ON_FINISH_RECORDING, filePath).sendToTarget();
         }
 
         void onError(final Error error) {

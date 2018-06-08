@@ -27,7 +27,7 @@
 
         <activity
             android:name="top.defaults.cameraapp.PhotographerActivity"
-            android:theme="@style/Theme.AppCompat.NoActionBar"/>
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>
 
         <provider
             android:name="android.support.v4.content.FileProvider"

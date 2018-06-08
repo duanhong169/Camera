@@ -28,7 +28,7 @@ public interface Photographer {
      */
     void resumeRecording();
 
-    void stopRecording();
+    void finishRecording();
 
     interface MediaRecorderConfigurator {
 
@@ -83,7 +83,7 @@ public interface Photographer {
 
         void onResumeRecording();
 
-        void onStopRecording(String filePath);
+        void onFinishRecording(String filePath);
 
         void onError(Error error);
     }

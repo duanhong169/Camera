@@ -34,7 +34,7 @@
         android:layout_alignParentTop="true"
         android:layout_above="@+id/actions_layout"
         android:padding="4dp"
-        android:background="#7fffffff">
+        android:background="#3fffffff">
 
         <top.defaults.view.TextButton
             android:id="@+id/chooseVideoSize"
@@ -42,6 +42,7 @@
             android:layout_height="wrap_content"
             android:padding="8dp"
             android:text="@string/video_size"
+            android:textColor="@android:color/white"
             app:underline="true"
             app:textEffect="animateSize"/>
 
@@ -59,26 +60,25 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_alignBottom="@+id/texture"
-        android:background="#7fffffff"
-        android:fitsSystemWindows="true">
+        android:background="#3fffffff">
 
         <top.defaults.view.TextButton
             android:id="@+id/video"
             android:layout_width="wrap_content"
             android:layout_height="64dp"
-            android:layout_centerHorizontal="true"
+            android:layout_centerInParent="true"
             android:padding="16dp"
-            android:textColor="@android:color/white"
+            android:textColor="@android:color/holo_red_light"
             android:text="@string/record"/>
 
         <top.defaults.view.TextButton
-            android:id="@+id/cancel"
+            android:id="@+id/switch_mode"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:padding="16dp"
             android:textColor="@android:color/white"
-            android:text="@string/cancel" />
+            android:text="@string/switch_mode" />
 
         <top.defaults.view.TextButton
             android:id="@+id/flip"
