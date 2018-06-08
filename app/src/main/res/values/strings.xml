@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">VideoApp</string>
+    <string name="app_name">CameraApp</string>
     <string name="record_video">Record</string>
     <string name="play">Play</string>
     <string name="no_enough_permission">No enough permissions(CAMERA, RECORD_AUDIO, WRITE_EXTERNAL_STORAGE)</string>

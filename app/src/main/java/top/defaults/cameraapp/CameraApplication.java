@@ -6,7 +6,7 @@ import timber.log.Timber;
 import top.defaults.view.TextButton;
 import top.defaults.view.TextButtonEffect;
 
-public class VideoApplication extends Application {
+public class CameraApplication extends Application {
 
     @Override
     public void onCreate() {
