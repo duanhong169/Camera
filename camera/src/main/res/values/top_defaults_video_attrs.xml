@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <declare-styleable name="AutoFitTextureView">
+    <declare-styleable name="CameraPreview">
         <attr name="fillSpace" format="boolean"/>
+        <attr name="showFocusIndicator" format="boolean"/>
     </declare-styleable>
+    <item name="textureView" type="id"/>
 </resources>

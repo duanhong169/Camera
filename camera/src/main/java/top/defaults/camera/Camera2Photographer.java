@@ -58,6 +58,7 @@ public class Camera2Photographer implements InternalPhotographer {
     private static final int CALLBACK_ON_ERROR = 8;
 
     private Activity activityContext;
+    private CameraPreview preview;
     private AutoFitTextureView textureView;
     private CallbackHandler callbackHandler;
     private boolean isInitialized;
@@ -108,9 +109,10 @@ public class Camera2Photographer implements InternalPhotographer {
     }
 
     @Override
-    public void initWithViewfinder(Activity activity, AutoFitTextureView textureView) {
+    public void initWithViewfinder(Activity activity, CameraPreview preview) {
         this.activityContext = activity;
-        this.textureView = textureView;
+        this.preview = preview;
+        this.textureView = preview.getTextureView();
         callbackHandler = new CallbackHandler(activityContext);
         isInitialized = true;
     }
@@ -404,8 +406,11 @@ public class Camera2Photographer implements InternalPhotographer {
                 if (sensorArraySize == null) return false;
                 int rotation = activityContext.getWindowManager().getDefaultDisplay().getRotation();
 
-                final int x;
-                final int y;
+                final int eventX = (int) event.getX();
+                final int eventY = (int) event.getY();
+
+                final int focusX;
+                final int focusY;
 
                 int degree = DEFAULT_ORIENTATIONS.get(rotation);
                 switch (sensorOrientation) {
@@ -419,26 +424,26 @@ public class Camera2Photographer implements InternalPhotographer {
 
                 switch (degree) {
                     case 0:
-                        x = (int)((event.getX() / (float)v.getWidth())  * (float)sensorArraySize.width());
-                        y = (int)((event.getY() / (float)v.getHeight()) * (float)sensorArraySize.height());
+                        focusX = (int)((eventX / (float)v.getWidth())  * (float)sensorArraySize.width());
+                        focusY = (int)((eventY / (float)v.getHeight()) * (float)sensorArraySize.height());
                         break;
                     case 180:
-                        x = (int)((1 - (event.getX() / (float)v.getWidth()))  * (float)sensorArraySize.width());
-                        y = (int)((1 - (event.getY() / (float)v.getHeight())) * (float)sensorArraySize.height());
+                        focusX = (int)((1 - (eventX / (float)v.getWidth()))  * (float)sensorArraySize.width());
+                        focusY = (int)((1 - (eventY / (float)v.getHeight())) * (float)sensorArraySize.height());
                         break;
                     case 270:
-                        x = (int)((1- (event.getY() / (float)v.getHeight())) * (float)sensorArraySize.width());
-                        y = (int)((event.getX() / (float)v.getWidth())  * (float)sensorArraySize.height());
+                        focusX = (int)((1- (eventY / (float)v.getHeight())) * (float)sensorArraySize.width());
+                        focusY = (int)((eventX / (float)v.getWidth())  * (float)sensorArraySize.height());
                         break;
                     case 90:
                     default:
-                        x = (int)((event.getY() / (float)v.getHeight()) * (float)sensorArraySize.width());
-                        y = (int)((1 - (event.getX() / (float)v.getWidth()))  * (float)sensorArraySize.height());
+                        focusX = (int)((eventY / (float)v.getHeight()) * (float)sensorArraySize.width());
+                        focusY = (int)((1 - (eventX / (float)v.getWidth()))  * (float)sensorArraySize.height());
                         break;
                 }
 
-                MeteringRectangle focusAreaTouch = new MeteringRectangle(Math.max(x - FOCUS_AREA_SIZE,  0),
-                        Math.max(y - FOCUS_AREA_SIZE, 0),
+                MeteringRectangle focusAreaTouch = new MeteringRectangle(Math.max(focusX - FOCUS_AREA_SIZE,  0),
+                        Math.max(focusY - FOCUS_AREA_SIZE, 0),
                         FOCUS_AREA_SIZE  * 2,
                         FOCUS_AREA_SIZE * 2,
                         MeteringRectangle.METERING_WEIGHT_MAX - 1);
@@ -450,14 +455,11 @@ public class Camera2Photographer implements InternalPhotographer {
                         isManualFocusEngaged = false;
 
                         if (request.getTag() == "FOCUS_TAG") {
-                            //the focus trigger is complete -
-                            //resume repeating (preview surface will get frames), clear AF trigger
+                            // the focus trigger is complete, clear AF trigger
                             previewBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, null);
-                            try {
-                                previewSession.setRepeatingRequest(previewBuilder.build(), null, null);
-                            } catch (CameraAccessException e) {
-                                e.printStackTrace();
-                            }
+                            // resume repeating (preview surface will get frames)
+                            updatePreview();
+                            preview.focusFinished();
                         }
                     }
 
@@ -466,6 +468,7 @@ public class Camera2Photographer implements InternalPhotographer {
                         super.onCaptureFailed(session, request, failure);
                         Logger.e("Manual AF failure: " + failure);
                         isManualFocusEngaged = false;
+                        preview.focusFinished();
                     }
                 };
 
@@ -478,11 +481,6 @@ public class Camera2Photographer implements InternalPhotographer {
                 // cancel any existing AF trigger (repeated touches, etc.)
                 previewBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, CameraMetadata.CONTROL_AF_TRIGGER_CANCEL);
                 previewBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF);
-                try {
-                    previewSession.capture(previewBuilder.build(), captureCallbackHandler, backgroundHandler);
-                } catch (CameraAccessException e) {
-                    e.printStackTrace();
-                }
 
                 // add a new AF trigger with focus region
                 Integer maxRegionsAf = characteristics.get(CameraCharacteristics.CONTROL_MAX_REGIONS_AF);
@@ -492,11 +490,12 @@ public class Camera2Photographer implements InternalPhotographer {
                 previewBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
                 previewBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_AUTO);
                 previewBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, CameraMetadata.CONTROL_AF_TRIGGER_START);
-                previewBuilder.setTag("FOCUS_TAG"); //we'll capture this later for resuming the preview
+                previewBuilder.setTag("FOCUS_TAG"); // we'll capture this later for resuming the preview
 
                 // then we ask for a single request (not repeating!)
                 try {
                     previewSession.capture(previewBuilder.build(), captureCallbackHandler, backgroundHandler);
+                    preview.focusRequestAt(eventX, eventY);
                 } catch (CameraAccessException e) {
                     e.printStackTrace();
                 }

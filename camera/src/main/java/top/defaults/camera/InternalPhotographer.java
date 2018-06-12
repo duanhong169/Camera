@@ -4,5 +4,5 @@ import android.app.Activity;
 
 interface InternalPhotographer extends Photographer {
 
-    void initWithViewfinder(Activity activity, AutoFitTextureView textureView);
+    void initWithViewfinder(Activity activity, CameraPreview preview);
 }

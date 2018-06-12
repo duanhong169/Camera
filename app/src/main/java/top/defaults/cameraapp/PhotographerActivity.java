@@ -19,7 +19,7 @@ import butterknife.ButterKnife;
 import butterknife.OnCheckedChanged;
 import butterknife.OnClick;
 import timber.log.Timber;
-import top.defaults.camera.AutoFitTextureView;
+import top.defaults.camera.CameraPreview;
 import top.defaults.camera.Error;
 import top.defaults.camera.Keys;
 import top.defaults.camera.Photographer;
@@ -37,7 +37,7 @@ public class PhotographerActivity extends AppCompatActivity {
     private Size[] videoSizes;
     private VideoSize selectedSize;
 
-    @BindView(R.id.texture) AutoFitTextureView textureView;
+    @BindView(R.id.preview) CameraPreview preview;
     @BindView(R.id.status) TextView statusTextView;
     @BindView(R.id.video) TextButton videoButton;
     @BindView(R.id.switch_mode) TextButton switchButton;
@@ -68,7 +68,7 @@ public class PhotographerActivity extends AppCompatActivity {
 
     @OnCheckedChanged(R.id.fillSpace)
     void onFillSpaceChecked(boolean checked) {
-        textureView.setFillSpace(checked);
+        preview.setFillSpace(checked);
     }
 
     @OnClick(R.id.video)
@@ -107,7 +107,7 @@ public class PhotographerActivity extends AppCompatActivity {
         enterFullscreen();
 
         ButterKnife.bind(this);
-        photographer = PhotographerFactory.createPhotographerWithCamera2(this, textureView);
+        photographer = PhotographerFactory.createPhotographerWithCamera2(this, preview);
         photographer.setOnEventListener(new Photographer.OnEventListener() {
             @Override
             public void onDeviceConfigured() {

@@ -17,7 +17,6 @@
 package top.defaults.camera;
 
 import android.content.Context;
-import android.content.res.TypedArray;
 import android.util.AttributeSet;
 import android.view.TextureView;
 
@@ -26,7 +25,7 @@ import top.defaults.logger.Logger;
 /**
  * A {@link TextureView} that can be adjusted to a specified aspect ratio.
  */
-public class AutoFitTextureView extends TextureView {
+class AutoFitTextureView extends TextureView {
 
     private int ratioWidth = 0;
     private int ratioHeight = 0;
@@ -42,10 +41,6 @@ public class AutoFitTextureView extends TextureView {
 
     public AutoFitTextureView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
-
-        TypedArray typedArray = context.obtainStyledAttributes(attrs, R.styleable.AutoFitTextureView);
-        fillSpace = typedArray.getBoolean(R.styleable.AutoFitTextureView_fillSpace, false);
-        typedArray.recycle();
     }
 
     /**
@@ -94,5 +89,4 @@ public class AutoFitTextureView extends TextureView {
             }
         }
     }
-
 }

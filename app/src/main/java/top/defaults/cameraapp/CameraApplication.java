@@ -14,5 +14,6 @@ public class CameraApplication extends Application {
         Timber.plant(new Timber.DebugTree());
         TextButton.Defaults defaults = TextButton.Defaults.get();
         defaults.set(top.defaults.view.textbutton.R.styleable.TextButton_backgroundEffect, TextButtonEffect.BACKGROUND_EFFECT_RIPPLE);
+        defaults.set(top.defaults.view.textbutton.R.styleable.TextButton_rippleColor, 0xffff0000);
     }
 }
