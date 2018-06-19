@@ -12,13 +12,13 @@
         android:orientation="vertical">
 
         <top.defaults.view.TextButton
-            android:id="@+id/prepare_to_record"
+            android:id="@+id/open_camera"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="8dp"
             android:gravity="center"
             android:padding="8dp"
-            android:text="@string/record_video"/>
+            android:text="@string/open_camera"/>
 
         <LinearLayout
             android:id="@+id/play_layout"

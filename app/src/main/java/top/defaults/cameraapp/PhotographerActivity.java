@@ -231,7 +231,7 @@ public class PhotographerActivity extends AppCompatActivity {
             switchButton.setVisibility(View.VISIBLE);
             flipButton.setVisibility(View.VISIBLE);
             videoButton.setEnabled(true);
-            videoButton.setText(R.string.record_video);
+            videoButton.setText(R.string.open_camera);
         }
     }
 }

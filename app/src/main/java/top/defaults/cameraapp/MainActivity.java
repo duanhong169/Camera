@@ -41,7 +41,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         RxPermissions rxPermissions = new RxPermissions(this);
-        prepareToRecord = findViewById(R.id.prepare_to_record);
+        prepareToRecord = findViewById(R.id.open_camera);
         RxView.clicks(prepareToRecord)
                 .compose(rxPermissions.ensure(Manifest.permission.CAMERA,
                         Manifest.permission.RECORD_AUDIO,
