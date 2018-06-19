@@ -65,7 +65,7 @@ public class MainActivity extends AppCompatActivity {
         fileInfo.setText("");
         play.setOnClickListener(null);
 
-        Intent intent = new Intent(MainActivity.this, PhotographerActivity.class);
+        Intent intent = new Intent(this, PhotographerActivity.class);
         startActivityForResult(intent, REQUEST_VIDEO_RECORD);
     }
 

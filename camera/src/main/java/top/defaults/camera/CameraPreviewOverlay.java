@@ -14,8 +14,9 @@ import android.view.SurfaceView;
 class CameraPreviewOverlay extends SurfaceView {
 
     private SurfaceHolder holder;
-    private Paint focusPaint;
     private Point focusPoint;
+    private CanvasDrawer canvasDrawer;
+    private Paint[] paints;
 
     public CameraPreviewOverlay(Context context) {
         this(context, null);
@@ -30,12 +31,6 @@ class CameraPreviewOverlay extends SurfaceView {
         setZOrderOnTop(true);
         holder = getHolder();
         holder.setFormat(PixelFormat.TRANSPARENT);
-
-        focusPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        focusPaint.setStyle(Paint.Style.STROKE);
-        focusPaint.setStrokeWidth(2);
-        focusPaint.setColor(Color.WHITE);
-
         holder.addCallback(new SurfaceHolder.Callback() {
             @Override
             public void surfaceCreated(SurfaceHolder holder) {
@@ -54,6 +49,11 @@ class CameraPreviewOverlay extends SurfaceView {
         });
     }
 
+    public void setCanvasDrawer(CanvasDrawer drawer) {
+        canvasDrawer = drawer;
+        paints = drawer.initPaints();
+    }
+
     void focusRequestAt(int x, int y) {
         if (x >= 0 && x <= getMeasuredWidth() && y >= 0 && y <= getMeasuredHeight()) {
             focusPoint = new Point(x, y);
@@ -64,7 +64,7 @@ class CameraPreviewOverlay extends SurfaceView {
 
     void focusFinished() {
         focusPoint = null;
-        clear();
+        postDelayed(this::clear, 300);
     }
 
     private void drawIndicator() {
@@ -74,7 +74,7 @@ class CameraPreviewOverlay extends SurfaceView {
             if (canvas != null) {
                 canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
                 canvas.drawColor(Color.TRANSPARENT);
-                canvas.drawCircle(focusPoint.x, focusPoint.y, 150, focusPaint);
+                canvasDrawer.draw(canvas, focusPoint, paints);
                 holder.unlockCanvasAndPost(canvas);
             }
         }

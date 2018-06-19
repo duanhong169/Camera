@@ -10,6 +10,7 @@ import android.widget.RelativeLayout;
 
 public class CameraPreview extends RelativeLayout {
 
+    private Context context;
     private AutoFitTextureView textureView;
     private CameraPreviewOverlay overlay;
 
@@ -24,6 +25,7 @@ public class CameraPreview extends RelativeLayout {
     public CameraPreview(@NonNull Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
 
+        this.context = context;
         textureView = new AutoFitTextureView(context);
         textureView.setId(R.id.textureView);
         LayoutParams textureViewParams = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -37,13 +39,7 @@ public class CameraPreview extends RelativeLayout {
         typedArray.recycle();
 
         if (showFocusIndicator) {
-            overlay = new CameraPreviewOverlay(context);
-            LayoutParams overlayParams = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            overlayParams.addRule(ALIGN_LEFT, R.id.textureView);
-            overlayParams.addRule(ALIGN_TOP, R.id.textureView);
-            overlayParams.addRule(ALIGN_RIGHT, R.id.textureView);
-            overlayParams.addRule(ALIGN_BOTTOM, R.id.textureView);
-            addView(overlay, overlayParams);
+            setFocusIndicatorDrawer(new CanvasDrawer.DefaultCanvasDrawer());
         }
     }
 
@@ -53,6 +49,24 @@ public class CameraPreview extends RelativeLayout {
 
     public void setFillSpace(boolean fillSpace) {
         textureView.setFillSpace(fillSpace);
+    }
+
+    private void addOverlay() {
+        overlay = new CameraPreviewOverlay(context);
+        LayoutParams overlayParams = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        overlayParams.addRule(ALIGN_LEFT, R.id.textureView);
+        overlayParams.addRule(ALIGN_TOP, R.id.textureView);
+        overlayParams.addRule(ALIGN_RIGHT, R.id.textureView);
+        overlayParams.addRule(ALIGN_BOTTOM, R.id.textureView);
+        addView(overlay, overlayParams);
+    }
+
+    public void setFocusIndicatorDrawer(CanvasDrawer drawer) {
+        if (overlay == null) {
+            addOverlay();
+        }
+
+        overlay.setCanvasDrawer(drawer);
     }
 
     void focusRequestAt(int x, int y) {

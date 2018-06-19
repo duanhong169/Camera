@@ -1,7 +1,10 @@
 package top.defaults.cameraapp;
 
 import android.content.Intent;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Point;
 import android.hardware.camera2.CameraCharacteristics;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -20,6 +23,7 @@ import butterknife.OnCheckedChanged;
 import butterknife.OnClick;
 import timber.log.Timber;
 import top.defaults.camera.CameraPreview;
+import top.defaults.camera.CanvasDrawer;
 import top.defaults.camera.Error;
 import top.defaults.camera.Keys;
 import top.defaults.camera.Photographer;
@@ -107,6 +111,44 @@ public class PhotographerActivity extends AppCompatActivity {
         enterFullscreen();
 
         ButterKnife.bind(this);
+
+        preview.setFocusIndicatorDrawer(new CanvasDrawer() {
+            private static final int SIZE = 300;
+            private static final int LINE_LENGTH = 50;
+
+            @Override
+            public Paint[] initPaints() {
+                Paint focusPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                focusPaint.setStyle(Paint.Style.STROKE);
+                focusPaint.setStrokeWidth(2);
+                focusPaint.setColor(Color.WHITE);
+                return new Paint[]{ focusPaint };
+            }
+
+            @Override
+            public void draw(Canvas canvas, Point point, Paint[] paints) {
+                if (paints == null || paints.length == 0) return;
+
+                int left = point.x - (SIZE / 2);
+                int top = point.y - (SIZE / 2);
+                int right = point.x + (SIZE / 2);
+                int bottom = point.y + (SIZE / 2);
+
+                Paint paint = paints[0];
+
+                canvas.drawLine(left, top + LINE_LENGTH, left, top, paint);
+                canvas.drawLine(left, top, left + LINE_LENGTH, top, paint);
+
+                canvas.drawLine(right - LINE_LENGTH, top, right, top, paint);
+                canvas.drawLine(right, top, right, top + LINE_LENGTH, paint);
+
+                canvas.drawLine(right, bottom - LINE_LENGTH, right, bottom, paint);
+                canvas.drawLine(right, bottom, right - LINE_LENGTH, bottom, paint);
+
+                canvas.drawLine(left + LINE_LENGTH, bottom, left, bottom, paint);
+                canvas.drawLine(left, bottom, left, bottom - LINE_LENGTH, paint);
+            }
+        });
         photographer = PhotographerFactory.createPhotographerWithCamera2(this, preview);
         photographer.setOnEventListener(new Photographer.OnEventListener() {
             @Override
