@@ -15,7 +15,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -30,43 +32,54 @@ import top.defaults.camera.Photographer;
 import top.defaults.camera.PhotographerFactory;
 import top.defaults.cameraapp.dialog.PickerDialog;
 import top.defaults.cameraapp.dialog.SimplePickerDialog;
-import top.defaults.cameraapp.options.VideoSize;
+import top.defaults.cameraapp.options.CameraOutputSize;
 import top.defaults.view.TextButton;
 
 public class PhotographerActivity extends AppCompatActivity {
 
     Photographer photographer;
     private boolean isRecordingVideo;
-    private int lensFacing = CameraCharacteristics.LENS_FACING_BACK;
+    private Size[] imageSizes;
     private Size[] videoSizes;
-    private VideoSize selectedSize;
+    private CameraOutputSize selectedSize;
 
     @BindView(R.id.preview) CameraPreview preview;
     @BindView(R.id.status) TextView statusTextView;
-    @BindView(R.id.video) TextButton videoButton;
+    @BindView(R.id.action) TextButton actionButton;
     @BindView(R.id.switch_mode) TextButton switchButton;
     @BindView(R.id.flip) TextButton flipButton;
 
-    @OnClick(R.id.chooseVideoSize)
-    void chooseVideoSize() {
-        if (videoSizes != null && videoSizes.length > 0) {
-            SimplePickerDialog<VideoSize> dialog = SimplePickerDialog.create(new PickerDialog.ActionListener<VideoSize>() {
+    @OnClick(R.id.chooseSize)
+    void chooseSize() {
+        List<CameraOutputSize> supportedSizes = null;
+        Integer mode = (Integer) photographer.getCurrentParams().get(Keys.MODE);
+        if (mode == Photographer.MODE_VIDEO) {
+            if (videoSizes != null && videoSizes.length > 0) {
+                supportedSizes = CameraOutputSize.supportedSizes(videoSizes);
+            }
+        } else if (mode == Photographer.MODE_IMAGE) {
+            if (imageSizes != null && imageSizes.length > 0) {
+                supportedSizes = CameraOutputSize.supportedSizes(imageSizes);
+            }
+        }
+
+        if (supportedSizes != null) {
+            SimplePickerDialog<CameraOutputSize> dialog = SimplePickerDialog.create(new PickerDialog.ActionListener<CameraOutputSize>() {
                 @Override
-                public void onCancelClick(PickerDialog<VideoSize> dialog) {
+                public void onCancelClick(PickerDialog<CameraOutputSize> dialog) {
 
                 }
 
                 @Override
-                public void onDoneClick(PickerDialog<VideoSize> dialog) {
-                    VideoSize videoSize = dialog.getSelectedItem(VideoSize.class);
-                    selectedSize = videoSize;
-                    photographer.setVideoSize(videoSize.size);
+                public void onDoneClick(PickerDialog<CameraOutputSize> dialog) {
+                    CameraOutputSize cameraOutputSize = dialog.getSelectedItem(CameraOutputSize.class);
+                    selectedSize = cameraOutputSize;
+                    photographer.setVideoSize(cameraOutputSize.size);
                 }
             });
-            List<VideoSize> supportedSizes = VideoSize.supportedSizes(videoSizes);
             dialog.setItems(supportedSizes);
-            dialog.setInitialItem(VideoSize.findEqual(supportedSizes, selectedSize));
-            dialog.show(getFragmentManager(), "videoSize");
+            dialog.setInitialItem(CameraOutputSize.findEqual(supportedSizes, selectedSize));
+            dialog.show(getFragmentManager(), "cameraOutputSize");
         }
     }
 
@@ -75,33 +88,53 @@ public class PhotographerActivity extends AppCompatActivity {
         preview.setFillSpace(checked);
     }
 
-    @OnClick(R.id.video)
-    void video() {
-        if (isRecordingVideo) {
-            finishRecordingIfNeeded();
-        } else {
-            photographer.startRecording(null);
-            isRecordingVideo = true;
-            videoButton.setEnabled(false);
-            switchButton.setVisibility(View.INVISIBLE);
-            flipButton.setVisibility(View.INVISIBLE);
+    @OnClick(R.id.action)
+    void action() {
+        Integer mode = Photographer.MODE_IMAGE;
+        if (photographer.getCurrentParams() != null) {
+            mode = (Integer) photographer.getCurrentParams().get(Keys.MODE);
+            if (mode == null) mode = Photographer.MODE_IMAGE;
+        }
+        if (mode == Photographer.MODE_VIDEO) {
+            if (isRecordingVideo) {
+                finishRecordingIfNeeded();
+            } else {
+                photographer.startRecording(null);
+                isRecordingVideo = true;
+                actionButton.setEnabled(false);
+                switchButton.setVisibility(View.INVISIBLE);
+                flipButton.setVisibility(View.INVISIBLE);
+            }
+        } else if (mode == Photographer.MODE_IMAGE) {
+            photographer.shot();
         }
     }
 
     @OnClick(R.id.switch_mode)
     void switchMode() {
+        Map<String, Object> params = photographer.getCurrentParams();
+        if (params == null) params = new HashMap<>();
+        Integer mode = (Integer) params.get(Keys.MODE);
+        if (mode == null) mode = Photographer.MODE_IMAGE;
+        int newMode = (mode == Photographer.MODE_IMAGE ? Photographer.MODE_VIDEO : Photographer.MODE_IMAGE);
+        if (newMode == Photographer.MODE_VIDEO) {
+            actionButton.setText(R.string.record);
+        } else {
+            actionButton.setText(R.string.shot);
+        }
 
+        photographer.restartPreview(Collections.singletonMap(Keys.MODE, newMode));
     }
 
     @OnClick(R.id.flip)
     void flip() {
-        photographer.stopPreview();
-        if (lensFacing == CameraCharacteristics.LENS_FACING_BACK) {
-            lensFacing = CameraCharacteristics.LENS_FACING_FRONT;
-        } else {
-            lensFacing = CameraCharacteristics.LENS_FACING_BACK;
-        }
-        photographer.startPreview(Collections.singletonMap(Keys.LENS_FACING, lensFacing));
+        Map<String, Object> params = photographer.getCurrentParams();
+        if (params == null) params = new HashMap<>();
+        Integer lensFacing = (Integer) params.get(Keys.LENS_FACING);
+        if (lensFacing == null) lensFacing = CameraCharacteristics.LENS_FACING_BACK;
+
+        photographer.restartPreview(Collections.singletonMap(Keys.LENS_FACING, lensFacing == CameraCharacteristics.LENS_FACING_BACK
+                ? CameraCharacteristics.LENS_FACING_FRONT : CameraCharacteristics.LENS_FACING_BACK));
     }
 
     @Override
@@ -153,7 +186,8 @@ public class PhotographerActivity extends AppCompatActivity {
         photographer.setOnEventListener(new Photographer.OnEventListener() {
             @Override
             public void onDeviceConfigured() {
-                videoSizes = photographer.getSupportedRecordSize();
+                imageSizes = photographer.getSupportedImageSizes();
+                videoSizes = photographer.getSupportedVideoSizes();
             }
 
             @Override
@@ -168,8 +202,8 @@ public class PhotographerActivity extends AppCompatActivity {
 
             @Override
             public void onStartRecording() {
-                videoButton.setEnabled(true);
-                videoButton.setText(R.string.finish);
+                actionButton.setEnabled(true);
+                actionButton.setText(R.string.finish);
                 statusTextView.setVisibility(View.VISIBLE);
             }
 
@@ -192,6 +226,14 @@ public class PhotographerActivity extends AppCompatActivity {
             }
 
             @Override
+            public void onShotFinished(String filePath) {
+                Toast.makeText(PhotographerActivity.this, "File: " + filePath, Toast.LENGTH_SHORT).show();
+                Intent data = new Intent();
+                data.putExtra(MainActivity.EXTRA_CAPTURED_IMAGE_FILE_PATH, filePath);
+                setResult(RESULT_OK, data);
+            }
+
+            @Override
             public void onError(Error error) {
                 Timber.e("Error happens: %s", error.getMessage());
             }
@@ -201,7 +243,7 @@ public class PhotographerActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        photographer.startPreview(Collections.singletonMap(Keys.LENS_FACING, lensFacing));
+        photographer.startPreview(photographer.getCurrentParams());
     }
 
     @Override
@@ -230,8 +272,8 @@ public class PhotographerActivity extends AppCompatActivity {
             statusTextView.setVisibility(View.INVISIBLE);
             switchButton.setVisibility(View.VISIBLE);
             flipButton.setVisibility(View.VISIBLE);
-            videoButton.setEnabled(true);
-            videoButton.setText(R.string.open_camera);
+            actionButton.setEnabled(true);
+            actionButton.setText(R.string.record);
         }
     }
 }

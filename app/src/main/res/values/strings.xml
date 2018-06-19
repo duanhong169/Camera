@@ -5,6 +5,7 @@
     <string name="no_enough_permission">No enough permissions(CAMERA, RECORD_AUDIO, WRITE_EXTERNAL_STORAGE)</string>
     <string name="recording">Recording</string>
     <string name="record">Record</string>
+    <string name="shot">Shot</string>
     <string name="cancel">Cancel</string>
     <string name="switch_mode">Switch</string>
     <string name="finish">Finish</string>
@@ -13,4 +14,5 @@
     <string name="done">Done</string>
     <string name="fill">Fill</string>
     <string name="video_size">Video size</string>
+    <string name="image_size">Image size</string>
 </resources>

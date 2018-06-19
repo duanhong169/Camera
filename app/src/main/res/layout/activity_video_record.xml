@@ -37,7 +37,7 @@
         android:background="#3fffffff">
 
         <top.defaults.view.TextButton
-            android:id="@+id/chooseVideoSize"
+            android:id="@+id/chooseSize"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="8dp"
@@ -63,13 +63,13 @@
         android:background="#3fffffff">
 
         <top.defaults.view.TextButton
-            android:id="@+id/video"
+            android:id="@+id/action"
             android:layout_width="wrap_content"
             android:layout_height="64dp"
             android:layout_centerInParent="true"
             android:padding="16dp"
             android:textColor="@android:color/holo_red_light"
-            android:text="@string/record"/>
+            android:text="@string/shot"/>
 
         <top.defaults.view.TextButton
             android:id="@+id/switch_mode"

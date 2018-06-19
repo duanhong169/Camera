@@ -8,11 +8,24 @@ import java.util.Map;
 
 public interface Photographer {
 
-    Size[] getSupportedRecordSize();
+    int MODE_IMAGE = 0;
+    int MODE_VIDEO = 1;
+
+    Size[] getSupportedImageSizes();
+
+    Size[] getSupportedVideoSizes();
+
+    Map<String, Object> getCurrentParams();
 
     void startPreview(Map<String, Object> params);
 
+    void restartPreview(Map<String, Object> params);
+
     void stopPreview();
+
+    void setImageSize(Size size);
+
+    void shot();
 
     void setVideoSize(Size size);
 
@@ -84,6 +97,8 @@ public interface Photographer {
         void onResumeRecording();
 
         void onFinishRecording(String filePath);
+
+        void onShotFinished(String filePath);
 
         void onError(Error error);
     }

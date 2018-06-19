@@ -26,8 +26,9 @@ import java.util.Locale;
 public class MainActivity extends AppCompatActivity {
 
     public static final String EXTRA_RECORDED_VIDEO_FILE_PATH = "extra_recorded_video_file_path";
+    public static final String EXTRA_CAPTURED_IMAGE_FILE_PATH = "extra_captured_image_file_path";
 
-    private static final int REQUEST_VIDEO_RECORD = 2;
+    private static final int REQUEST_CAMERA = 2;
 
     private View prepareToRecord;
     private View playLayout;
@@ -66,12 +67,12 @@ public class MainActivity extends AppCompatActivity {
         play.setOnClickListener(null);
 
         Intent intent = new Intent(this, PhotographerActivity.class);
-        startActivityForResult(intent, REQUEST_VIDEO_RECORD);
+        startActivityForResult(intent, REQUEST_CAMERA);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (resultCode == RESULT_OK && requestCode == REQUEST_VIDEO_RECORD) {
+        if (resultCode == RESULT_OK && requestCode == REQUEST_CAMERA) {
             String filePath = data.getStringExtra(EXTRA_RECORDED_VIDEO_FILE_PATH);
             if (!TextUtils.isEmpty(filePath)) {
                 File file = new File(filePath);
@@ -84,7 +85,7 @@ public class MainActivity extends AppCompatActivity {
                     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
                         videoURI = Uri.fromFile(file);
                     }
-                    intent.setDataAndType(videoURI, "video/mp4");
+                    intent.setDataAndType(videoURI, "action/mp4");
                     intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
                     PackageManager packageManager = getPackageManager();
@@ -94,7 +95,7 @@ public class MainActivity extends AppCompatActivity {
                     if (isIntentSafe) {
                         startActivity(intent);
                     } else {
-                        Toast.makeText(MainActivity.this, "No video player found", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(MainActivity.this, "No action player found", Toast.LENGTH_SHORT).show();
                     }
                 });
             }
