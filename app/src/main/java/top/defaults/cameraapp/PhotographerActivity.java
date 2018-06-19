@@ -45,6 +45,7 @@ public class PhotographerActivity extends AppCompatActivity {
 
     @BindView(R.id.preview) CameraPreview preview;
     @BindView(R.id.status) TextView statusTextView;
+    @BindView(R.id.chooseSize) TextButton chooseSizeButton;
     @BindView(R.id.action) TextButton actionButton;
     @BindView(R.id.switch_mode) TextButton switchButton;
     @BindView(R.id.flip) TextButton flipButton;
@@ -52,7 +53,11 @@ public class PhotographerActivity extends AppCompatActivity {
     @OnClick(R.id.chooseSize)
     void chooseSize() {
         List<CameraOutputSize> supportedSizes = null;
-        Integer mode = (Integer) photographer.getCurrentParams().get(Keys.MODE);
+        Integer mode = Photographer.MODE_IMAGE;
+        if (photographer.getCurrentParams() != null) {
+            mode = (Integer) photographer.getCurrentParams().get(Keys.MODE);
+            if (mode == null) mode = Photographer.MODE_IMAGE;
+        }
         if (mode == Photographer.MODE_VIDEO) {
             if (videoSizes != null && videoSizes.length > 0) {
                 supportedSizes = CameraOutputSize.supportedSizes(videoSizes);
@@ -74,7 +79,7 @@ public class PhotographerActivity extends AppCompatActivity {
                 public void onDoneClick(PickerDialog<CameraOutputSize> dialog) {
                     CameraOutputSize cameraOutputSize = dialog.getSelectedItem(CameraOutputSize.class);
                     selectedSize = cameraOutputSize;
-                    photographer.setVideoSize(cameraOutputSize.size);
+                    photographer.setImageSize(cameraOutputSize.size);
                 }
             });
             dialog.setItems(supportedSizes);
@@ -119,8 +124,10 @@ public class PhotographerActivity extends AppCompatActivity {
         int newMode = (mode == Photographer.MODE_IMAGE ? Photographer.MODE_VIDEO : Photographer.MODE_IMAGE);
         if (newMode == Photographer.MODE_VIDEO) {
             actionButton.setText(R.string.record);
+            chooseSizeButton.setText(R.string.video_size);
         } else {
             actionButton.setText(R.string.shot);
+            chooseSizeButton.setText(R.string.image_size);
         }
 
         photographer.restartPreview(Collections.singletonMap(Keys.MODE, newMode));
