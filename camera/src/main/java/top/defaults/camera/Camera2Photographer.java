@@ -377,6 +377,7 @@ public class Camera2Photographer implements InternalPhotographer {
 
             shotState = STATE_WAITING_LOCK;
             previewSession.capture(previewBuilder.build(), shotCallback, backgroundHandler);
+            preview.shot();
         } catch (CameraAccessException e) {
             e.printStackTrace();
             callbackHandler.onError(Utils.errorFromThrowable(e));

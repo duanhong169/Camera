@@ -124,8 +124,6 @@ public class PhotographerActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_video_record);
-        enterFullscreen();
-
         ButterKnife.bind(this);
 
         preview.setFocusIndicatorDrawer(new CanvasDrawer() {
@@ -227,6 +225,7 @@ public class PhotographerActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        enterFullscreen();
         photographer.startPreview(photographer.getCurrentParams());
     }
 

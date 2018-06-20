@@ -1,5 +1,9 @@
 package top.defaults.camera;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ArgbEvaluator;
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -10,6 +14,7 @@ import android.graphics.PorterDuff;
 import android.util.AttributeSet;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.animation.DecelerateInterpolator;
 
 class CameraPreviewOverlay extends SurfaceView {
 
@@ -86,5 +91,24 @@ class CameraPreviewOverlay extends SurfaceView {
             canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
             holder.unlockCanvasAndPost(canvas);
         }
+    }
+
+    private static final int SHUTTER_ONE_WAY_TIME = 150;
+
+    public void shot() {
+        int colorFrom = Color.TRANSPARENT;
+        int colorTo = 0xaf000000;
+        ValueAnimator colorAnimation = ValueAnimator.ofObject(new ArgbEvaluator(), colorFrom, colorTo);
+        colorAnimation.setInterpolator(new DecelerateInterpolator());
+        colorAnimation.setDuration(SHUTTER_ONE_WAY_TIME);
+        colorAnimation.addUpdateListener(animator -> setBackgroundColor((int) animator.getAnimatedValue()));
+        colorAnimation.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationCancel(Animator animation) {
+                setBackgroundColor(colorFrom);
+            }
+        });
+        colorAnimation.start();
+        postDelayed(colorAnimation::reverse, SHUTTER_ONE_WAY_TIME);
     }
 }

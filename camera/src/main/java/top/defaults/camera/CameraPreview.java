@@ -38,6 +38,8 @@ public class CameraPreview extends RelativeLayout {
         boolean showFocusIndicator = typedArray.getBoolean(R.styleable.CameraPreview_showFocusIndicator, true);
         typedArray.recycle();
 
+        addOverlay();
+
         if (showFocusIndicator) {
             setFocusIndicatorDrawer(new CanvasDrawer.DefaultCanvasDrawer());
         }
@@ -62,22 +64,18 @@ public class CameraPreview extends RelativeLayout {
     }
 
     public void setFocusIndicatorDrawer(CanvasDrawer drawer) {
-        if (overlay == null) {
-            addOverlay();
-        }
-
         overlay.setCanvasDrawer(drawer);
     }
 
     void focusRequestAt(int x, int y) {
-        if (overlay != null) {
-            overlay.focusRequestAt(x, y);
-        }
+        overlay.focusRequestAt(x, y);
     }
 
     void focusFinished() {
-        if (overlay != null) {
-            overlay.focusFinished();
-        }
+        overlay.focusFinished();
+    }
+
+    void shot() {
+        overlay.shot();
     }
 }
