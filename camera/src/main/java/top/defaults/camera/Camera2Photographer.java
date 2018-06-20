@@ -26,6 +26,7 @@ import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.ImageReader;
 import android.media.MediaRecorder;
 import android.os.Build;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
@@ -50,6 +51,8 @@ import java.util.concurrent.TimeUnit;
 
 import top.defaults.logger.Logger;
 
+import static top.defaults.camera.Error.ERROR_CAMERA;
+
 public class Camera2Photographer implements InternalPhotographer {
 
     private static final int CALLBACK_ON_DEVICE_CONFIGURED = 1;
@@ -66,20 +69,24 @@ public class Camera2Photographer implements InternalPhotographer {
     private CameraPreview preview;
     private AutoFitTextureView textureView;
     private CallbackHandler callbackHandler;
+
     private boolean isInitialized;
     private boolean isManualFocusEngaged;
-    private boolean isFlashSupported;
 
     private Map<String, Object> params;
     private int mode = MODE_IMAGE;
+    private int lensFacing;
+    private boolean isFlashSupported;
+
     private HandlerThread backgroundThread;
     private Handler backgroundHandler;
-    private int lensFacing;
+
     private Size previewSize;
     private Size[] supportedImageSizes;
     private Size imageSize;
     private Size[] supportedVideoSizes;
     private Size videoSize;
+
     private Semaphore cameraOpenCloseLock = new Semaphore(1);
     private Integer sensorOrientation;
     private CameraDevice cameraDevice;
@@ -88,6 +95,7 @@ public class Camera2Photographer implements InternalPhotographer {
     private CameraCaptureSession previewSession;
     private CaptureRequest.Builder previewBuilder;
     private CameraCharacteristics characteristics;
+
     private String nextImageAbsolutePath;
     private String nextVideoAbsolutePath;
     private boolean isRecordingVideo;
@@ -213,8 +221,7 @@ public class Camera2Photographer implements InternalPhotographer {
         stopBackgroundThread();
     }
 
-    private CameraCaptureSession.CaptureCallback shotCallback
-            = new CameraCaptureSession.CaptureCallback() {
+    private CameraCaptureSession.CaptureCallback shotCallback = new CameraCaptureSession.CaptureCallback() {
 
         private void process(CaptureResult result) {
             switch (shotState) {
@@ -228,10 +235,8 @@ public class Camera2Photographer implements InternalPhotographer {
                         captureStillPicture();
                     } else if (CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED == afState ||
                             CaptureResult.CONTROL_AF_STATE_NOT_FOCUSED_LOCKED == afState) {
-                        // CONTROL_AE_STATE can be null on some devices
                         Integer aeState = result.get(CaptureResult.CONTROL_AE_STATE);
-                        if (aeState == null ||
-                                aeState == CaptureResult.CONTROL_AE_STATE_CONVERGED) {
+                        if (aeState == null || aeState == CaptureResult.CONTROL_AE_STATE_CONVERGED) {
                             shotState = STATE_PICTURE_TAKEN;
                             captureStillPicture();
                         } else {
@@ -241,7 +246,6 @@ public class Camera2Photographer implements InternalPhotographer {
                     break;
                 }
                 case STATE_WAITING_PRECAPTURE: {
-                    // CONTROL_AE_STATE can be null on some devices
                     Integer aeState = result.get(CaptureResult.CONTROL_AE_STATE);
                     if (aeState == null ||
                             aeState == CaptureResult.CONTROL_AE_STATE_PRECAPTURE ||
@@ -251,7 +255,6 @@ public class Camera2Photographer implements InternalPhotographer {
                     break;
                 }
                 case STATE_WAITING_NON_PRECAPTURE: {
-                    // CONTROL_AE_STATE can be null on some devices
                     Integer aeState = result.get(CaptureResult.CONTROL_AE_STATE);
                     if (aeState == null || aeState != CaptureResult.CONTROL_AE_STATE_PRECAPTURE) {
                         shotState = STATE_PICTURE_TAKEN;
@@ -282,11 +285,12 @@ public class Camera2Photographer implements InternalPhotographer {
         try {
             previewBuilder.set(CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER,
                     CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER_START);
-            // Tell #mCaptureCallback to wait for the precapture sequence to be set.
+            // Tell #shotCallback to wait for the precapture sequence to be set.
             shotState = STATE_WAITING_PRECAPTURE;
             previewSession.capture(previewBuilder.build(), shotCallback, backgroundHandler);
         } catch (CameraAccessException e) {
             e.printStackTrace();
+            callbackHandler.onError(Utils.errorFromThrowable(e));
         }
     }
 
@@ -303,7 +307,6 @@ public class Camera2Photographer implements InternalPhotographer {
             captureBuilder.set(CaptureRequest.CONTROL_AF_MODE,
                     CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
             setAutoFlash(captureBuilder);
-
             captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, getOrientation());
 
             CameraCaptureSession.CaptureCallback shotCallback
@@ -317,8 +320,10 @@ public class Camera2Photographer implements InternalPhotographer {
                 }
 
                 @Override
-                public void onCaptureFailed(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull CaptureFailure failure) {
-                    callbackHandler.onError(new Error(Error.ERROR_CAMERA));
+                public void onCaptureFailed(@NonNull CameraCaptureSession session,
+                                            @NonNull CaptureRequest request,
+                                            @NonNull CaptureFailure failure) {
+                    callbackHandler.onError(new Error(ERROR_CAMERA));
                     updatePreview();
                 }
             };
@@ -327,12 +332,14 @@ public class Camera2Photographer implements InternalPhotographer {
             previewSession.capture(captureBuilder.build(), shotCallback, null);
         } catch (CameraAccessException e) {
             e.printStackTrace();
+            callbackHandler.onError(Utils.errorFromThrowable(e));
         }
     }
 
     private void setAutoFlash(CaptureRequest.Builder requestBuilder) {
         if (isFlashSupported) {
-            requestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
+            requestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
+                    CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
         }
     }
 
@@ -353,12 +360,14 @@ public class Camera2Photographer implements InternalPhotographer {
     @Override
     public void shot() {
         try {
-            nextImageAbsolutePath = getImageFilePath(activityContext);
+            nextImageAbsolutePath = getImageFilePath();
             previewBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, CameraMetadata.CONTROL_AF_TRIGGER_START);
+
             shotState = STATE_WAITING_LOCK;
             previewSession.capture(previewBuilder.build(), shotCallback, backgroundHandler);
         } catch (CameraAccessException e) {
             e.printStackTrace();
+            callbackHandler.onError(Utils.errorFromThrowable(e));
         }
     }
 
@@ -378,14 +387,13 @@ public class Camera2Photographer implements InternalPhotographer {
     public void startRecording(MediaRecorderConfigurator configurator) {
         throwIfNoMediaRecorder();
         if (cameraDevice == null || !textureView.isAvailable() || previewSize == null) {
-            callbackHandler.onError(new Error(Error.ERROR_CAMERA));
+            callbackHandler.onError(new Error(ERROR_CAMERA));
             return;
         }
         try {
             closePreviewSession();
             setUpMediaRecorder(configurator);
             SurfaceTexture texture = textureView.getSurfaceTexture();
-            assert texture != null;
             texture.setDefaultBufferSize(previewSize.getWidth(), previewSize.getHeight());
             previewBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
             List<Surface> surfaces = new ArrayList<>();
@@ -417,11 +425,12 @@ public class Camera2Photographer implements InternalPhotographer {
 
                 @Override
                 public void onConfigureFailed(@NonNull CameraCaptureSession cameraCaptureSession) {
-                    callbackHandler.onError(new Error(Error.ERROR_CAMERA));
+                    callbackHandler.onError(new Error(ERROR_CAMERA));
                 }
             }, backgroundHandler);
         } catch (CameraAccessException | IOException e) {
             e.printStackTrace();
+            callbackHandler.onError(Utils.errorFromThrowable(e));
         }
     }
 
@@ -430,7 +439,7 @@ public class Camera2Photographer implements InternalPhotographer {
             mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
             mediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
             mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
-            nextVideoAbsolutePath = getVideoFilePath(activityContext);
+            nextVideoAbsolutePath = getVideoFilePath();
             mediaRecorder.setOutputFile(nextVideoAbsolutePath);
             mediaRecorder.setVideoEncodingBitRate(10000000);
             mediaRecorder.setVideoFrameRate(30);
@@ -447,18 +456,17 @@ public class Camera2Photographer implements InternalPhotographer {
         mediaRecorder.prepare();
     }
 
-    private String getImageFilePath(Context context) {
-        return getFilePath(context, ".jpg");
+    private String getImageFilePath() {
+        return getFilePath(".jpg");
     }
 
-    private String getVideoFilePath(Context context) {
-        return getFilePath(context, ".mp4");
+    private String getVideoFilePath() {
+        return getFilePath(".mp4");
     }
 
-    private String getFilePath(Context context, String fileSuffix) {
-        final File dir = context.getExternalFilesDir(null);
-        return (dir == null ? "" : (dir.getAbsolutePath() + "/"))
-                + System.currentTimeMillis() + fileSuffix;
+    private String getFilePath(String fileSuffix) {
+        final File dir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM) + "/Camera/");
+        return dir.getAbsolutePath() + "/" + System.currentTimeMillis() + fileSuffix;
     }
 
     @Override
@@ -514,6 +522,7 @@ public class Camera2Photographer implements InternalPhotographer {
             backgroundHandler = null;
         } catch (InterruptedException e) {
             e.printStackTrace();
+            callbackHandler.onError(Utils.errorFromThrowable(e));
         }
     }
 
@@ -542,7 +551,7 @@ public class Camera2Photographer implements InternalPhotographer {
             cameraOpenCloseLock.release();
             cameraDevice.close();
             Camera2Photographer.this.cameraDevice = null;
-            callbackHandler.onError(new Error(Error.ERROR_CAMERA));
+            callbackHandler.onError(new Error(ERROR_CAMERA));
         }
 
     };
@@ -580,7 +589,6 @@ public class Camera2Photographer implements InternalPhotographer {
         try {
             closePreviewSession();
             SurfaceTexture texture = textureView.getSurfaceTexture();
-            assert texture != null;
             texture.setDefaultBufferSize(previewSize.getWidth(), previewSize.getHeight());
             previewBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
 
@@ -604,13 +612,14 @@ public class Camera2Photographer implements InternalPhotographer {
 
                         @Override
                         public void onConfigureFailed(@NonNull CameraCaptureSession session) {
-                            callbackHandler.onError(new Error(Error.ERROR_CAMERA));
+                            callbackHandler.onError(new Error(ERROR_CAMERA));
                         }
                     }, backgroundHandler);
 
             setupTapToFocus();
         } catch (CameraAccessException e) {
             e.printStackTrace();
+            callbackHandler.onError(Utils.errorFromThrowable(e));
         }
     }
 
@@ -691,6 +700,7 @@ public class Camera2Photographer implements InternalPhotographer {
                 previewSession.stopRepeating();
             } catch (CameraAccessException e) {
                 e.printStackTrace();
+                callbackHandler.onError(Utils.errorFromThrowable(e));
             }
 
             // cancel any existing AF trigger (repeated touches, etc.)
@@ -707,12 +717,12 @@ public class Camera2Photographer implements InternalPhotographer {
             previewBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, CameraMetadata.CONTROL_AF_TRIGGER_START);
             previewBuilder.setTag("FOCUS_TAG"); // we'll capture this later for resuming the preview
 
-            // then we ask for a single request (not repeating!)
             try {
                 previewSession.capture(previewBuilder.build(), focusCallbackHandler, backgroundHandler);
                 preview.focusRequestAt(eventX, eventY);
             } catch (CameraAccessException e) {
                 e.printStackTrace();
+                callbackHandler.onError(Utils.errorFromThrowable(e));
             }
             isManualFocusEngaged = true;
 
@@ -735,6 +745,7 @@ public class Camera2Photographer implements InternalPhotographer {
             }
         } catch (CameraAccessException e) {
             e.printStackTrace();
+            callbackHandler.onError(Utils.errorFromThrowable(e));
         }
     }
 
@@ -759,7 +770,8 @@ public class Camera2Photographer implements InternalPhotographer {
         }
         try {
             if (!cameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
-                throw new RuntimeException("Time out waiting to lock camera opening.");
+                callbackHandler.onError(new Error(ERROR_CAMERA, "Time out waiting to lock camera opening."));
+                return;
             }
 
             for (String cameraId: manager.getCameraIdList()) {
@@ -772,12 +784,12 @@ public class Camera2Photographer implements InternalPhotographer {
 
                 this.characteristics = characteristics;
                 // Choose the sizes for camera preview and video recording
-                StreamConfigurationMap map = characteristics
-                        .get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+                StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
 
                 sensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
                 if (map == null) {
-                    throw new RuntimeException("Cannot get available preview/video sizes");
+                    callbackHandler.onError(new Error(ERROR_CAMERA, "Cannot get available preview/video sizes"));
+                    return;
                 }
 
                 Boolean available = characteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);
@@ -816,13 +828,13 @@ public class Camera2Photographer implements InternalPhotographer {
                 manager.openCamera(cameraId, stateCallback, null);
             }
         } catch (CameraAccessException e) {
-            callbackHandler.onError(new Error(Error.ERROR_CAMERA, "Cannot access the camera."));
+            callbackHandler.onError(new Error(ERROR_CAMERA, "Cannot access the camera."));
         } catch (NullPointerException e) {
             // Currently an NPE is thrown when the Camera2API is used but not supported on the
             // device this code runs.
-            callbackHandler.onError(new Error(Error.ERROR_CAMERA, "This device doesn\'t support Camera2 API."));
+            callbackHandler.onError(new Error(ERROR_CAMERA, "This device doesn\'t support Camera2 API."));
         } catch (InterruptedException e) {
-            throw new RuntimeException("Interrupted while trying to lock camera opening.");
+            callbackHandler.onError(new Error(ERROR_CAMERA, "Interrupted while trying to lock camera opening."));
         }
     }
 
@@ -902,7 +914,7 @@ public class Camera2Photographer implements InternalPhotographer {
                 mediaRecorder = null;
             }
         } catch (InterruptedException e) {
-            throw new RuntimeException("Interrupted while trying to lock camera closing.");
+            callbackHandler.onError(new Error(ERROR_CAMERA, "Interrupted while trying to lock camera closing."));
         } finally {
             cameraOpenCloseLock.release();
         }
