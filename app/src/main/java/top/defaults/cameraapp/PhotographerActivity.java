@@ -5,7 +5,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Point;
-import android.hardware.camera2.CameraCharacteristics;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
@@ -14,10 +13,7 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -27,9 +23,9 @@ import timber.log.Timber;
 import top.defaults.camera.CameraPreview;
 import top.defaults.camera.CanvasDrawer;
 import top.defaults.camera.Error;
-import top.defaults.camera.Keys;
 import top.defaults.camera.Photographer;
 import top.defaults.camera.PhotographerFactory;
+import top.defaults.camera.PhotographerHelper;
 import top.defaults.cameraapp.dialog.PickerDialog;
 import top.defaults.cameraapp.dialog.SimplePickerDialog;
 import top.defaults.cameraapp.options.CameraOutputSize;
@@ -38,6 +34,7 @@ import top.defaults.view.TextButton;
 public class PhotographerActivity extends AppCompatActivity {
 
     Photographer photographer;
+    PhotographerHelper photographerHelper;
     private boolean isRecordingVideo;
     private Size[] imageSizes;
     private Size[] videoSizes;
@@ -53,11 +50,7 @@ public class PhotographerActivity extends AppCompatActivity {
     @OnClick(R.id.chooseSize)
     void chooseSize() {
         List<CameraOutputSize> supportedSizes = null;
-        Integer mode = Photographer.MODE_IMAGE;
-        if (photographer.getCurrentParams() != null) {
-            mode = (Integer) photographer.getCurrentParams().get(Keys.MODE);
-            if (mode == null) mode = Photographer.MODE_IMAGE;
-        }
+        int mode = photographerHelper.getMode();
         if (mode == Photographer.MODE_VIDEO) {
             if (videoSizes != null && videoSizes.length > 0) {
                 supportedSizes = CameraOutputSize.supportedSizes(videoSizes);
@@ -71,9 +64,7 @@ public class PhotographerActivity extends AppCompatActivity {
         if (supportedSizes != null) {
             SimplePickerDialog<CameraOutputSize> dialog = SimplePickerDialog.create(new PickerDialog.ActionListener<CameraOutputSize>() {
                 @Override
-                public void onCancelClick(PickerDialog<CameraOutputSize> dialog) {
-
-                }
+                public void onCancelClick(PickerDialog<CameraOutputSize> dialog) { }
 
                 @Override
                 public void onDoneClick(PickerDialog<CameraOutputSize> dialog) {
@@ -95,17 +86,14 @@ public class PhotographerActivity extends AppCompatActivity {
 
     @OnClick(R.id.action)
     void action() {
-        Integer mode = Photographer.MODE_IMAGE;
-        if (photographer.getCurrentParams() != null) {
-            mode = (Integer) photographer.getCurrentParams().get(Keys.MODE);
-            if (mode == null) mode = Photographer.MODE_IMAGE;
-        }
+        int mode = photographerHelper.getMode();
         if (mode == Photographer.MODE_VIDEO) {
             if (isRecordingVideo) {
                 finishRecordingIfNeeded();
             } else {
-                photographer.startRecording(null);
                 isRecordingVideo = true;
+                photographer.startRecording(null);
+
                 actionButton.setEnabled(false);
                 switchButton.setVisibility(View.INVISIBLE);
                 flipButton.setVisibility(View.INVISIBLE);
@@ -117,11 +105,7 @@ public class PhotographerActivity extends AppCompatActivity {
 
     @OnClick(R.id.switch_mode)
     void switchMode() {
-        Map<String, Object> params = photographer.getCurrentParams();
-        if (params == null) params = new HashMap<>();
-        Integer mode = (Integer) params.get(Keys.MODE);
-        if (mode == null) mode = Photographer.MODE_IMAGE;
-        int newMode = (mode == Photographer.MODE_IMAGE ? Photographer.MODE_VIDEO : Photographer.MODE_IMAGE);
+        int newMode = photographerHelper.switchMode();
         if (newMode == Photographer.MODE_VIDEO) {
             actionButton.setText(R.string.record);
             chooseSizeButton.setText(R.string.video_size);
@@ -129,19 +113,11 @@ public class PhotographerActivity extends AppCompatActivity {
             actionButton.setText(R.string.shot);
             chooseSizeButton.setText(R.string.image_size);
         }
-
-        photographer.restartPreview(Collections.singletonMap(Keys.MODE, newMode));
     }
 
     @OnClick(R.id.flip)
     void flip() {
-        Map<String, Object> params = photographer.getCurrentParams();
-        if (params == null) params = new HashMap<>();
-        Integer lensFacing = (Integer) params.get(Keys.LENS_FACING);
-        if (lensFacing == null) lensFacing = CameraCharacteristics.LENS_FACING_BACK;
-
-        photographer.restartPreview(Collections.singletonMap(Keys.LENS_FACING, lensFacing == CameraCharacteristics.LENS_FACING_BACK
-                ? CameraCharacteristics.LENS_FACING_FRONT : CameraCharacteristics.LENS_FACING_BACK));
+        photographerHelper.flip();
     }
 
     @Override
@@ -190,6 +166,7 @@ public class PhotographerActivity extends AppCompatActivity {
             }
         });
         photographer = PhotographerFactory.createPhotographerWithCamera2(this, preview);
+        photographerHelper = new PhotographerHelper(photographer);
         photographer.setOnEventListener(new Photographer.OnEventListener() {
             @Override
             public void onDeviceConfigured() {

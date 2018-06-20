@@ -7,6 +7,7 @@ public class Error extends java.lang.Error {
     public static final int ERROR_CAMERA = 1;
     public static final int ERROR_UNSUPPORTED_OPERATION = 2;
     public static final int ERROR_PERMISSION = 3;
+    public static final int ERROR_STORAGE = 4;
 
     private int code;
 
@@ -31,6 +32,9 @@ public class Error extends java.lang.Error {
                 break;
             case ERROR_PERMISSION:
                 message = "No enough permissions";
+                break;
+            case ERROR_STORAGE:
+                message = "No enough storage";
                 break;
             default:
                 message = "Undefined error";

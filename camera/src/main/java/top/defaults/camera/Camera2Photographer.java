@@ -4,6 +4,7 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.ImageFormat;
@@ -25,6 +26,7 @@ import android.hardware.camera2.params.MeteringRectangle;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.ImageReader;
 import android.media.MediaRecorder;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
@@ -41,6 +43,7 @@ import android.view.TextureView;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -316,6 +319,7 @@ public class Camera2Photographer implements InternalPhotographer {
                                                @NonNull CaptureRequest request,
                                                @NonNull TotalCaptureResult result) {
                     callbackHandler.onShotFinished(nextImageAbsolutePath);
+                    addPicToGallery(activityContext, nextImageAbsolutePath);
                     updatePreview();
                 }
 
@@ -355,6 +359,14 @@ public class Camera2Photographer implements InternalPhotographer {
                 break;
         }
         return degree;
+    }
+
+    private static void addPicToGallery(Context context, String photoPath) {
+        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+        File file = new File(photoPath);
+        Uri contentUri = Uri.fromFile(file);
+        mediaScanIntent.setData(contentUri);
+        context.sendBroadcast(mediaScanIntent);
     }
 
     @Override
@@ -465,7 +477,13 @@ public class Camera2Photographer implements InternalPhotographer {
     }
 
     private String getFilePath(String fileSuffix) {
-        final File dir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM) + "/Camera/");
+        final File dir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM) + "/CameraApp/");
+        if (!dir.exists()) {
+            boolean result = dir.mkdirs();
+            if (!result) {
+                callbackHandler.onError(new Error(Error.ERROR_STORAGE));
+            }
+        }
         return dir.getAbsolutePath() + "/" + System.currentTimeMillis() + fileSuffix;
     }
 
@@ -797,12 +815,13 @@ public class Camera2Photographer implements InternalPhotographer {
 
                 supportedImageSizes = map.getOutputSizes(ImageFormat.JPEG);
                 if (imageSize == null) {
-                    imageSize = chooseSize(supportedImageSizes);
+                    imageSize = Collections.max(Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)),
+                            new CompareSizesByArea());
                 }
 
                 supportedVideoSizes = map.getOutputSizes(MediaRecorder.class);
                 if (videoSize == null) {
-                    videoSize = chooseSize(supportedVideoSizes);
+                    videoSize = chooseVideoSize(supportedVideoSizes);
                 }
 
                 Size size = mode == MODE_IMAGE ? imageSize : videoSize;
@@ -838,7 +857,7 @@ public class Camera2Photographer implements InternalPhotographer {
         }
     }
 
-    private static Size chooseSize(Size[] choices) {
+    private static Size chooseVideoSize(Size[] choices) {
         for (Size size : choices) {
             if (size.getWidth() == size.getHeight() * 4 / 3 && size.getHeight() <= 1080) {
                 return size;
