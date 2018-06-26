@@ -17,7 +17,10 @@
 package top.defaults.camera;
 
 import android.content.Context;
+import android.graphics.Matrix;
+import android.graphics.SurfaceTexture;
 import android.util.AttributeSet;
+import android.view.Surface;
 import android.view.TextureView;
 
 import top.defaults.logger.Logger;
@@ -30,6 +33,7 @@ class AutoFitTextureView extends TextureView {
     private int ratioWidth = 0;
     private int ratioHeight = 0;
     private boolean fillSpace = false;
+    private int displayOrientation;
 
     public AutoFitTextureView(Context context) {
         this(context, null);
@@ -41,6 +45,29 @@ class AutoFitTextureView extends TextureView {
 
     public AutoFitTextureView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
+        setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
+
+            @Override
+            public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+                configureTransform();
+                dispatchSurfaceChanged();
+            }
+
+            @Override
+            public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
+                configureTransform();
+                dispatchSurfaceChanged();
+            }
+
+            @Override
+            public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
+                return true;
+            }
+
+            @Override
+            public void onSurfaceTextureUpdated(SurfaceTexture surface) {
+            }
+        });
     }
 
     /**
@@ -87,6 +114,74 @@ class AutoFitTextureView extends TextureView {
                     setMeasuredDimension(height * ratioWidth / ratioHeight, height);
                 }
             }
+        }
+    }
+
+    Surface getSurface() {
+        return new Surface(getSurfaceTexture());
+    }
+
+    void setBufferSize(int width, int height) {
+        getSurfaceTexture().setDefaultBufferSize(width, height);
+    }
+
+    int getDisplayOrientation() {
+        return displayOrientation;
+    }
+
+    void setDisplayOrientation(int displayOrientation) {
+        this.displayOrientation = displayOrientation;
+        configureTransform();
+    }
+
+    private void configureTransform() {
+        Matrix matrix = new Matrix();
+        if (displayOrientation % 180 == 90) {
+            final int width = getWidth();
+            final int height = getHeight();
+            // Rotate the camera preview when the screen is landscape.
+            matrix.setPolyToPoly(
+                    new float[]{
+                            0.f, 0.f, // top left
+                            width, 0.f, // top right
+                            0.f, height, // bottom left
+                            width, height, // bottom right
+                    }, 0,
+                    displayOrientation == 90 ?
+                            // Clockwise
+                            new float[]{
+                                    0.f, height, // top left
+                                    0.f, 0.f, // top right
+                                    width, height, // bottom left
+                                    width, 0.f, // bottom right
+                            } : // mDisplayOrientation == 270
+                            // Counter-clockwise
+                            new float[]{
+                                    width, 0.f, // top left
+                                    width, height, // top right
+                                    0.f, 0.f, // bottom left
+                                    0.f, height, // bottom right
+                            }, 0,
+                    4);
+        } else if (displayOrientation == 180) {
+            matrix.postRotate(180, getWidth() / 2, getHeight() / 2);
+        }
+        setTransform(matrix);
+    }
+
+    interface Callback {
+        void onSurfaceChanged();
+    }
+
+    private Callback callback;
+
+    public void setCallback(Callback callback) {
+        this.callback = callback;
+    }
+
+    protected void dispatchSurfaceChanged() {
+        if (callback != null) {
+            callback.onSurfaceChanged();
         }
     }
 }

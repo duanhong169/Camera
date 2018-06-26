@@ -2,18 +2,15 @@ package top.defaults.camera;
 
 import android.media.MediaRecorder;
 import android.support.annotation.Nullable;
-import android.util.Size;
 
+import java.util.Collection;
 import java.util.Map;
 
 public interface Photographer {
 
-    int MODE_IMAGE = 0;
-    int MODE_VIDEO = 1;
+    Collection<Size> getSupportedImageSizes();
 
-    Size[] getSupportedImageSizes();
-
-    Size[] getSupportedVideoSizes();
+    Collection<Size> getSupportedVideoSizes();
 
     Map<String, Object> getCurrentParams();
 
@@ -25,9 +22,21 @@ public interface Photographer {
 
     void setImageSize(Size size);
 
-    void shot();
-
     void setVideoSize(Size size);
+
+    void setFacing(int facing);
+
+    int getFacing();
+
+    void setAutoFocus(boolean autoFocus);
+
+    boolean getAutoFocus();
+
+    void setFlash(int flash);
+
+    int getFlash();
+
+    void takePicture();
 
     void startRecording(@Nullable MediaRecorderConfigurator configurator);
 
@@ -91,10 +100,6 @@ public interface Photographer {
         void onPreviewStopped();
 
         void onStartRecording();
-
-        void onPauseRecording();
-
-        void onResumeRecording();
 
         void onFinishRecording(String filePath);
 

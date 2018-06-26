@@ -1,10 +1,10 @@
 package top.defaults.cameraapp.options;
 
-import android.util.Size;
-
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
+import top.defaults.camera.Size;
 import top.defaults.view.PickerView;
 
 public class CameraOutputSize implements PickerView.PickerItem {
@@ -20,7 +20,7 @@ public class CameraOutputSize implements PickerView.PickerItem {
         return size.getWidth() + " * " + size.getHeight();
     }
 
-    public static List<CameraOutputSize> supportedSizes(Size[] sizes) {
+    public static List<CameraOutputSize> supportedSizes(Collection<Size> sizes) {
         List<CameraOutputSize> cameraOutputSizes = new ArrayList<>();
         for (Size size: sizes) {
             cameraOutputSizes.add(new CameraOutputSize(size));

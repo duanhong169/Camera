@@ -13,7 +13,7 @@ public class PhotographerHelper {
     }
 
     public int getMode() {
-        Integer mode = Photographer.MODE_IMAGE;
+        Integer mode = Values.MODE_IMAGE;
         if (photographer.getCurrentParams() != null && photographer.getCurrentParams().get(Keys.MODE) != null) {
             mode = (Integer) photographer.getCurrentParams().get(Keys.MODE);
         }
@@ -21,19 +21,19 @@ public class PhotographerHelper {
     }
 
     public int switchMode() {
-        int newMode = (getMode() == Photographer.MODE_IMAGE ? Photographer.MODE_VIDEO : Photographer.MODE_IMAGE);
+        int newMode = (getMode() == Values.MODE_IMAGE ? Values.MODE_VIDEO : Values.MODE_IMAGE);
         photographer.restartPreview(Collections.singletonMap(Keys.MODE, newMode));
         return newMode;
     }
 
     public int flip() {
         Integer lensFacing = CameraCharacteristics.LENS_FACING_BACK;
-        if (photographer.getCurrentParams() != null && photographer.getCurrentParams().get(Keys.LENS_FACING) != null) {
-            lensFacing = (Integer) photographer.getCurrentParams().get(Keys.LENS_FACING);
+        if (photographer.getCurrentParams() != null && photographer.getCurrentParams().get(Keys.FACING) != null) {
+            lensFacing = (Integer) photographer.getCurrentParams().get(Keys.FACING);
         }
         int newLensFacing = (lensFacing == CameraCharacteristics.LENS_FACING_BACK
                 ? CameraCharacteristics.LENS_FACING_FRONT : CameraCharacteristics.LENS_FACING_BACK);
-        photographer.restartPreview(Collections.singletonMap(Keys.LENS_FACING, newLensFacing));
+        photographer.restartPreview(Collections.singletonMap(Keys.FACING, newLensFacing));
         return newLensFacing;
     }
 }

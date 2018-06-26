@@ -13,6 +13,7 @@ public class CameraPreview extends RelativeLayout {
     private Context context;
     private AutoFitTextureView textureView;
     private CameraPreviewOverlay overlay;
+    private final DisplayOrientationDetector displayOrientationDetector;
 
     public CameraPreview(@NonNull Context context) {
         this(context, null);
@@ -43,6 +44,13 @@ public class CameraPreview extends RelativeLayout {
         if (showFocusIndicator) {
             setFocusIndicatorDrawer(new CanvasDrawer.DefaultCanvasDrawer());
         }
+
+        displayOrientationDetector = new DisplayOrientationDetector(context) {
+            @Override
+            public void onDisplayOrientationChanged(int displayOrientation) {
+                textureView.setDisplayOrientation(displayOrientation);
+            }
+        };
     }
 
     AutoFitTextureView getTextureView() {

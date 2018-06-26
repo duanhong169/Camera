@@ -10,15 +10,35 @@ public class Error extends java.lang.Error {
     public static final int ERROR_STORAGE = 4;
 
     private int code;
+    private Throwable cause;
 
-    public Error(int code) {
+    Error(int code) {
         super(messageFor(code));
         this.code = code;
+    }
+
+    Error(int code, Throwable cause) {
+        super(cause.getMessage());
+        this.code = code;
+        this.cause = cause;
+        cause.printStackTrace();
     }
 
     Error(int code, String message) {
         super(message);
         this.code = code;
+    }
+
+    Error(int code, String message, Throwable cause) {
+        super(message);
+        this.code = code;
+        this.cause = cause;
+        cause.printStackTrace();
+    }
+
+    @Override
+    public Throwable getCause() {
+        return cause;
     }
 
     private static String messageFor(int code) {

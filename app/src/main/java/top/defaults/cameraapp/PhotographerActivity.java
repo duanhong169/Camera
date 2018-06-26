@@ -8,11 +8,11 @@ import android.graphics.Point;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Size;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.Collection;
 import java.util.List;
 
 import butterknife.BindView;
@@ -26,6 +26,8 @@ import top.defaults.camera.Error;
 import top.defaults.camera.Photographer;
 import top.defaults.camera.PhotographerFactory;
 import top.defaults.camera.PhotographerHelper;
+import top.defaults.camera.Size;
+import top.defaults.camera.Values;
 import top.defaults.cameraapp.dialog.PickerDialog;
 import top.defaults.cameraapp.dialog.SimplePickerDialog;
 import top.defaults.cameraapp.options.CameraOutputSize;
@@ -36,8 +38,8 @@ public class PhotographerActivity extends AppCompatActivity {
     Photographer photographer;
     PhotographerHelper photographerHelper;
     private boolean isRecordingVideo;
-    private Size[] imageSizes;
-    private Size[] videoSizes;
+    private Collection<Size> imageSizes;
+    private Collection<Size> videoSizes;
     private CameraOutputSize selectedSize;
 
     @BindView(R.id.preview) CameraPreview preview;
@@ -51,12 +53,12 @@ public class PhotographerActivity extends AppCompatActivity {
     void chooseSize() {
         List<CameraOutputSize> supportedSizes = null;
         int mode = photographerHelper.getMode();
-        if (mode == Photographer.MODE_VIDEO) {
-            if (videoSizes != null && videoSizes.length > 0) {
+        if (mode == Values.MODE_VIDEO) {
+            if (videoSizes != null && videoSizes.size() > 0) {
                 supportedSizes = CameraOutputSize.supportedSizes(videoSizes);
             }
-        } else if (mode == Photographer.MODE_IMAGE) {
-            if (imageSizes != null && imageSizes.length > 0) {
+        } else if (mode == Values.MODE_IMAGE) {
+            if (imageSizes != null && imageSizes.size() > 0) {
                 supportedSizes = CameraOutputSize.supportedSizes(imageSizes);
             }
         }
@@ -87,7 +89,7 @@ public class PhotographerActivity extends AppCompatActivity {
     @OnClick(R.id.action)
     void action() {
         int mode = photographerHelper.getMode();
-        if (mode == Photographer.MODE_VIDEO) {
+        if (mode == Values.MODE_VIDEO) {
             if (isRecordingVideo) {
                 finishRecordingIfNeeded();
             } else {
@@ -98,15 +100,15 @@ public class PhotographerActivity extends AppCompatActivity {
                 switchButton.setVisibility(View.INVISIBLE);
                 flipButton.setVisibility(View.INVISIBLE);
             }
-        } else if (mode == Photographer.MODE_IMAGE) {
-            photographer.shot();
+        } else if (mode == Values.MODE_IMAGE) {
+            photographer.takePicture();
         }
     }
 
     @OnClick(R.id.switch_mode)
     void switchMode() {
         int newMode = photographerHelper.switchMode();
-        if (newMode == Photographer.MODE_VIDEO) {
+        if (newMode == Values.MODE_VIDEO) {
             actionButton.setText(R.string.record);
             chooseSizeButton.setText(R.string.video_size);
         } else {
@@ -187,16 +189,6 @@ public class PhotographerActivity extends AppCompatActivity {
                 actionButton.setEnabled(true);
                 actionButton.setText(R.string.finish);
                 statusTextView.setVisibility(View.VISIBLE);
-            }
-
-            @Override
-            public void onPauseRecording() {
-
-            }
-
-            @Override
-            public void onResumeRecording() {
-
             }
 
             @Override
