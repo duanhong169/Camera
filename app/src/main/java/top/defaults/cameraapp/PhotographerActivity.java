@@ -9,7 +9,6 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
-import android.widget.CheckBox;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -31,7 +30,9 @@ import top.defaults.camera.Size;
 import top.defaults.camera.Values;
 import top.defaults.cameraapp.dialog.PickerDialog;
 import top.defaults.cameraapp.dialog.SimplePickerDialog;
-import top.defaults.cameraapp.options.CameraOutputSize;
+import top.defaults.cameraapp.options.AspectRatioItem;
+import top.defaults.cameraapp.options.Commons;
+import top.defaults.cameraapp.options.SizeItem;
 import top.defaults.view.TextButton;
 
 public class PhotographerActivity extends AppCompatActivity {
@@ -39,48 +40,93 @@ public class PhotographerActivity extends AppCompatActivity {
     Photographer photographer;
     PhotographerHelper photographerHelper;
     private boolean isRecordingVideo;
-    private Set<Size> imageSizes;
-    private Set<Size> videoSizes;
-    private Size selectedSize;
 
     @BindView(R.id.preview) CameraPreview preview;
     @BindView(R.id.status) TextView statusTextView;
 
     @BindView(R.id.chooseSize) TextButton chooseSizeButton;
-    @BindView(R.id.fillSpace) CheckBox fillSpaceCheckBox;
+    @BindView(R.id.flash) TextButton flashTextButton;
 
     @BindView(R.id.switch_mode) TextButton switchButton;
     @BindView(R.id.action) TextButton actionButton;
     @BindView(R.id.flip) TextButton flipButton;
 
+    private int currentFlash = Values.FLASH_AUTO;
+
+    private static final int[] FLASH_OPTIONS = {
+            Values.FLASH_AUTO,
+            Values.FLASH_OFF,
+            Values.FLASH_ON,
+    };
+
+    private static final int[] FLASH_ICONS = {
+            R.drawable.ic_flash_auto,
+            R.drawable.ic_flash_off,
+            R.drawable.ic_flash_on,
+    };
+
+    private static final int[] FLASH_TITLES = {
+            R.string.flash_auto,
+            R.string.flash_off,
+            R.string.flash_on,
+    };
+
+    @OnClick(R.id.chooseRatio)
+    void chooseRatio() {
+        List<AspectRatioItem> supportedAspectRatios = Commons.wrapItems(photographer.getSupportedAspectRatios(), AspectRatioItem::new);
+        if (supportedAspectRatios != null) {
+            SimplePickerDialog<AspectRatioItem> dialog = SimplePickerDialog.create(new PickerDialog.ActionListener<AspectRatioItem>() {
+                @Override
+                public void onCancelClick(PickerDialog<AspectRatioItem> dialog) { }
+
+                @Override
+                public void onDoneClick(PickerDialog<AspectRatioItem> dialog) {
+                    AspectRatioItem item = dialog.getSelectedItem(AspectRatioItem.class);
+                    photographer.setAspectRatio(item.get());
+                }
+            });
+            dialog.setItems(supportedAspectRatios);
+            dialog.setInitialItem(Commons.findEqual(supportedAspectRatios, photographer.getAspectRatio()));
+            dialog.show(getFragmentManager(), "aspectRatio");
+        }
+    }
+
     @OnClick(R.id.chooseSize)
     void chooseSize() {
-        List<CameraOutputSize> supportedSizes = null;
+        Size selectedSize = null;
+        List<SizeItem> supportedSizes = null;
         int mode = photographer.getMode();
         if (mode == Values.MODE_VIDEO) {
+            Set<Size> videoSizes = photographer.getSupportedVideoSizes();
+            selectedSize = photographer.getVideoSize();
             if (videoSizes != null && videoSizes.size() > 0) {
-                supportedSizes = CameraOutputSize.supportedSizes(videoSizes);
+                supportedSizes = Commons.wrapItems(videoSizes, SizeItem::new);
             }
         } else if (mode == Values.MODE_IMAGE) {
+            Set<Size> imageSizes = photographer.getSupportedImageSizes();
+            selectedSize = photographer.getImageSize();
             if (imageSizes != null && imageSizes.size() > 0) {
-                supportedSizes = CameraOutputSize.supportedSizes(imageSizes);
+                supportedSizes = Commons.wrapItems(imageSizes, SizeItem::new);
             }
         }
 
         if (supportedSizes != null) {
-            SimplePickerDialog<CameraOutputSize> dialog = SimplePickerDialog.create(new PickerDialog.ActionListener<CameraOutputSize>() {
+            SimplePickerDialog<SizeItem> dialog = SimplePickerDialog.create(new PickerDialog.ActionListener<SizeItem>() {
                 @Override
-                public void onCancelClick(PickerDialog<CameraOutputSize> dialog) { }
+                public void onCancelClick(PickerDialog<SizeItem> dialog) { }
 
                 @Override
-                public void onDoneClick(PickerDialog<CameraOutputSize> dialog) {
-                    CameraOutputSize cameraOutputSize = dialog.getSelectedItem(CameraOutputSize.class);
-                    selectedSize = cameraOutputSize.size;
-                    photographer.setImageSize(cameraOutputSize.size);
+                public void onDoneClick(PickerDialog<SizeItem> dialog) {
+                    SizeItem sizeItem = dialog.getSelectedItem(SizeItem.class);
+                    if (mode == Values.MODE_VIDEO) {
+                        photographer.setVideoSize(sizeItem.get());
+                    } else {
+                        photographer.setImageSize(sizeItem.get());
+                    }
                 }
             });
             dialog.setItems(supportedSizes);
-            dialog.setInitialItem(CameraOutputSize.findEqual(supportedSizes, selectedSize));
+            dialog.setInitialItem(Commons.findEqual(supportedSizes, selectedSize));
             dialog.show(getFragmentManager(), "cameraOutputSize");
         }
     }
@@ -88,6 +134,14 @@ public class PhotographerActivity extends AppCompatActivity {
     @OnCheckedChanged(R.id.fillSpace)
     void onFillSpaceChecked(boolean checked) {
         preview.setFillSpace(checked);
+    }
+
+    @OnClick(R.id.flash)
+    void flash() {
+        currentFlash = (currentFlash + 1) % FLASH_OPTIONS.length;
+        flashTextButton.setText(FLASH_TITLES[currentFlash]);
+        flashTextButton.setCompoundDrawablesWithIntrinsicBounds(FLASH_ICONS[currentFlash], 0, 0, 0);
+        photographer.setFlash(FLASH_OPTIONS[currentFlash]);
     }
 
     @OnClick(R.id.action)
@@ -111,14 +165,7 @@ public class PhotographerActivity extends AppCompatActivity {
 
     @OnClick(R.id.switch_mode)
     void switchMode() {
-        int newMode = photographerHelper.switchMode();
-        if (newMode == Values.MODE_VIDEO) {
-            actionButton.setText(R.string.record);
-            chooseSizeButton.setText(R.string.video_size);
-        } else {
-            actionButton.setText(R.string.shot);
-            chooseSizeButton.setText(R.string.image_size);
-        }
+        photographerHelper.switchMode();
     }
 
     @OnClick(R.id.flip)
@@ -132,7 +179,6 @@ public class PhotographerActivity extends AppCompatActivity {
         setContentView(R.layout.activity_video_record);
         ButterKnife.bind(this);
 
-        preview.addCallback(() -> fillSpaceCheckBox.setChecked(preview.isFillSpace()));
         preview.setFocusIndicatorDrawer(new CanvasDrawer() {
             private static final int SIZE = 300;
             private static final int LINE_LENGTH = 50;
@@ -175,11 +221,12 @@ public class PhotographerActivity extends AppCompatActivity {
         photographer.setOnEventListener(new Photographer.OnEventListener() {
             @Override
             public void onDeviceConfigured() {
-                imageSizes = photographer.getSupportedImageSizes();
-                videoSizes = photographer.getSupportedVideoSizes();
-                selectedSize = photographer.getImageSize();
                 if (photographer.getMode() == Values.MODE_VIDEO) {
-                    selectedSize = photographer.getVideoSize();
+                    actionButton.setText(R.string.record);
+                    chooseSizeButton.setText(R.string.video_size);
+                } else {
+                    actionButton.setText(R.string.shot);
+                    chooseSizeButton.setText(R.string.image_size);
                 }
             }
 

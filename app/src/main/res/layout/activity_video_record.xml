@@ -12,6 +12,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerInParent="true"
+        app:mode="video"
         app:aspectRatio="16:9"
         app:autoFocus="true"
         app:facing="back"
@@ -69,6 +70,17 @@
             android:padding="4dp"
             android:text="@string/fill"
             android:textColor="#ffffff"/>
+
+        <top.defaults.view.TextButton
+            android:id="@+id/flash"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="4dp"
+            android:text="@string/flash_auto"
+            android:textColor="@android:color/white"
+            android:drawableStart="@drawable/ic_flash_auto"
+            app:underline="true"
+            app:textEffect="animateColor"/>
     </LinearLayout>
 
     <RelativeLayout

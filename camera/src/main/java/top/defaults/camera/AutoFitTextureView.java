@@ -36,7 +36,6 @@ class AutoFitTextureView extends TextureView {
     private int ratioWidth = 0;
     private int ratioHeight = 0;
     private boolean fillSpace = false;
-    private boolean isFillSpaceWithoutScale = false;
     private int displayOrientation;
 
     public AutoFitTextureView(Context context) {
@@ -93,7 +92,7 @@ class AutoFitTextureView extends TextureView {
     }
 
     public boolean isFillSpace() {
-        return fillSpace || isFillSpaceWithoutScale;
+        return fillSpace;
     }
 
     public void setFillSpace(boolean fillSpace) {
@@ -110,7 +109,7 @@ class AutoFitTextureView extends TextureView {
             setMeasuredDimension(width, height);
         } else {
             // is filling space by default
-            isFillSpaceWithoutScale = width == height * ratioWidth / ratioHeight;
+            boolean isFillSpaceWithoutScale = width == height * ratioWidth / ratioHeight;
             if (isFillSpaceWithoutScale) {
                 setMeasuredDimension(width, height);
                 return;

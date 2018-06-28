@@ -659,7 +659,8 @@ public class Camera2Photographer implements InternalPhotographer {
     }
 
     private void startCaptureSession() {
-        if (camera == null || textureView.getSurfaceTexture() == null || imageReader == null) {
+        if (camera == null || textureView.getSurfaceTexture() == null
+                || (mode == Values.MODE_IMAGE && imageReader == null)) {
             return;
         }
         try {
@@ -751,7 +752,6 @@ public class Camera2Photographer implements InternalPhotographer {
             closePreviewSession();
 
             setUpMediaRecorder(configurator);
-            textureView.setBufferSize(previewSize.getWidth(), previewSize.getHeight());
             previewRequestBuilder = camera.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
             Surface previewSurface = textureView.getSurface();
             previewRequestBuilder.addTarget(previewSurface);

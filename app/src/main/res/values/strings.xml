@@ -16,4 +16,7 @@
     <string name="video_size">Video size</string>
     <string name="image_size">Image size</string>
     <string name="ratio">Ratio</string>
+    <string name="flash_auto">Auto</string>
+    <string name="flash_on">On</string>
+    <string name="flash_off">Off</string>
 </resources>

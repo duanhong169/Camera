@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <declare-styleable name="CameraPreview">
-        <attr name="fillSpace" format="boolean"/>
-        <attr name="showFocusIndicator" format="boolean"/>
         <attr name="aspectRatio" format="string"/>
         <attr name="autoFocus" format="boolean"/>
         <attr name="facing" format="enum">
@@ -16,6 +14,12 @@
             <enum name="auto" value="3"/>
             <enum name="redEye" value="4"/>
         </attr>
+        <attr name="fillSpace" format="boolean"/>
+        <attr name="mode" format="enum">
+            <enum name="image" value="0"/>
+            <enum name="video" value="1"/>
+        </attr>
+        <attr name="showFocusIndicator" format="boolean"/>
     </declare-styleable>
     <item name="textureView" type="id"/>
 </resources>

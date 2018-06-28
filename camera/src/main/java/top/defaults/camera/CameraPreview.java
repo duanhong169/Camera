@@ -19,6 +19,7 @@ public class CameraPreview extends RelativeLayout {
     boolean autoFocus;
     int facing;
     int flash;
+    int mode;
 
     public CameraPreview(@NonNull Context context) {
         this(context, null);
@@ -43,6 +44,7 @@ public class CameraPreview extends RelativeLayout {
         autoFocus = typedArray.getBoolean(R.styleable.CameraPreview_autoFocus, true);
         facing = typedArray.getInt(R.styleable.CameraPreview_facing, Values.FACING_BACK);
         flash = typedArray.getInt(R.styleable.CameraPreview_flash, Values.FLASH_OFF);
+        mode = typedArray.getInt(R.styleable.CameraPreview_mode, Values.MODE_IMAGE);
         boolean fillSpace = typedArray.getBoolean(R.styleable.CameraPreview_fillSpace, false);
         textureView.setFillSpace(fillSpace);
         boolean showFocusIndicator = typedArray.getBoolean(R.styleable.CameraPreview_showFocusIndicator, true);
@@ -67,6 +69,7 @@ public class CameraPreview extends RelativeLayout {
         photographer.setAutoFocus(autoFocus);
         photographer.setFacing(facing);
         photographer.setFlash(flash);
+        photographer.setMode(mode);
     }
 
     @Override
