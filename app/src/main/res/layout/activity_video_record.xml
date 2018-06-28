@@ -11,7 +11,13 @@
         android:id="@+id/preview"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_centerInParent="true"/>
+        android:layout_centerInParent="true"
+        app:aspectRatio="16:9"
+        app:autoFocus="true"
+        app:facing="back"
+        app:fillSpace="false"
+        app:flash="auto"
+        app:showFocusIndicator="true"/>
 
     <TextView
         android:id="@+id/status"
@@ -37,10 +43,20 @@
         android:background="#3fffffff">
 
         <top.defaults.view.TextButton
+            android:id="@+id/chooseRatio"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="4dp"
+            android:text="@string/ratio"
+            android:textColor="@android:color/white"
+            app:underline="true"
+            app:textEffect="animateSize"/>
+
+        <top.defaults.view.TextButton
             android:id="@+id/chooseSize"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:padding="8dp"
+            android:padding="4dp"
             android:text="@string/image_size"
             android:textColor="@android:color/white"
             app:underline="true"
@@ -50,6 +66,7 @@
             android:id="@+id/fillSpace"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:padding="4dp"
             android:text="@string/fill"
             android:textColor="#ffffff"/>
     </LinearLayout>

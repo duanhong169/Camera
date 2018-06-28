@@ -3,38 +3,51 @@ package top.defaults.camera;
 import android.media.MediaRecorder;
 import android.support.annotation.Nullable;
 
-import java.util.Collection;
-import java.util.Map;
+import java.util.Set;
 
 public interface Photographer {
 
-    Collection<Size> getSupportedImageSizes();
+    Set<Size> getSupportedImageSizes();
 
-    Collection<Size> getSupportedVideoSizes();
+    Set<Size> getSupportedVideoSizes();
 
-    Map<String, Object> getCurrentParams();
+    void startPreview();
 
-    void startPreview(Map<String, Object> params);
-
-    void restartPreview(Map<String, Object> params);
+    void restartPreview();
 
     void stopPreview();
 
+    Size getPreviewSize();
+
+    Size getImageSize();
+
     void setImageSize(Size size);
+
+    Size getVideoSize();
 
     void setVideoSize(Size size);
 
-    void setFacing(int facing);
+    Set<AspectRatio> getSupportedAspectRatios();
 
-    int getFacing();
+    void setAspectRatio(AspectRatio ratio);
+
+    AspectRatio getAspectRatio();
 
     void setAutoFocus(boolean autoFocus);
 
     boolean getAutoFocus();
 
+    void setFacing(int facing);
+
+    int getFacing();
+
     void setFlash(int flash);
 
     int getFlash();
+
+    void setMode(int mode);
+
+    int getMode();
 
     void takePicture();
 

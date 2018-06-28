@@ -8,6 +8,7 @@ public class Error extends java.lang.Error {
     public static final int ERROR_UNSUPPORTED_OPERATION = 2;
     public static final int ERROR_PERMISSION = 3;
     public static final int ERROR_STORAGE = 4;
+    public static final int ERROR_INVALID_PARAM = 5;
 
     private int code;
     private Throwable cause;

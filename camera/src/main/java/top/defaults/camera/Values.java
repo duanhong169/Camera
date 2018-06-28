@@ -1,6 +1,8 @@
 package top.defaults.camera;
 
 public interface Values {
+    AspectRatio DEFAULT_ASPECT_RATIO = AspectRatio.of(4, 3);
+
     int MODE_IMAGE = 0;
     int MODE_VIDEO = 1;
 

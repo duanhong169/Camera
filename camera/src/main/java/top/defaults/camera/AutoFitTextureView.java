@@ -23,6 +23,9 @@ import android.util.AttributeSet;
 import android.view.Surface;
 import android.view.TextureView;
 
+import java.util.LinkedList;
+import java.util.List;
+
 import top.defaults.logger.Logger;
 
 /**
@@ -33,6 +36,7 @@ class AutoFitTextureView extends TextureView {
     private int ratioWidth = 0;
     private int ratioHeight = 0;
     private boolean fillSpace = false;
+    private boolean isFillSpaceWithoutScale = false;
     private int displayOrientation;
 
     public AutoFitTextureView(Context context) {
@@ -88,6 +92,10 @@ class AutoFitTextureView extends TextureView {
         requestLayout();
     }
 
+    public boolean isFillSpace() {
+        return fillSpace || isFillSpaceWithoutScale;
+    }
+
     public void setFillSpace(boolean fillSpace) {
         this.fillSpace = fillSpace;
         requestLayout();
@@ -101,6 +109,13 @@ class AutoFitTextureView extends TextureView {
         if (0 == ratioWidth || 0 == ratioHeight) {
             setMeasuredDimension(width, height);
         } else {
+            // is filling space by default
+            isFillSpaceWithoutScale = width == height * ratioWidth / ratioHeight;
+            if (isFillSpaceWithoutScale) {
+                setMeasuredDimension(width, height);
+                return;
+            }
+
             if (fillSpace) {
                 if (width < height * ratioWidth / ratioHeight) {
                     setMeasuredDimension(height * ratioWidth / ratioHeight, height);
@@ -173,14 +188,16 @@ class AutoFitTextureView extends TextureView {
         void onSurfaceChanged();
     }
 
-    private Callback callback;
+    private List<Callback> callbacks = new LinkedList<>();
 
-    public void setCallback(Callback callback) {
-        this.callback = callback;
+    public void addCallback(Callback callback) {
+        if (callback != null) {
+            callbacks.add(callback);
+        }
     }
 
     protected void dispatchSurfaceChanged() {
-        if (callback != null) {
+        for (Callback callback : callbacks) {
             callback.onSurfaceChanged();
         }
     }

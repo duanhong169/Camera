@@ -79,7 +79,9 @@ class CameraPreviewOverlay extends SurfaceView {
             if (canvas != null) {
                 canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
                 canvas.drawColor(Color.TRANSPARENT);
-                canvasDrawer.draw(canvas, focusPoint, paints);
+                if (canvasDrawer != null) {
+                    canvasDrawer.draw(canvas, focusPoint, paints);
+                }
                 holder.unlockCanvasAndPost(canvas);
             }
         }

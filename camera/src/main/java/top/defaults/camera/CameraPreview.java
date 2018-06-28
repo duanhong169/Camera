@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.view.ViewCompat;
 import android.util.AttributeSet;
 import android.view.ViewGroup;
 import android.widget.RelativeLayout;
@@ -14,6 +15,10 @@ public class CameraPreview extends RelativeLayout {
     private AutoFitTextureView textureView;
     private CameraPreviewOverlay overlay;
     private final DisplayOrientationDetector displayOrientationDetector;
+    String aspectRatio;
+    boolean autoFocus;
+    int facing;
+    int flash;
 
     public CameraPreview(@NonNull Context context) {
         this(context, null);
@@ -34,6 +39,10 @@ public class CameraPreview extends RelativeLayout {
         addView(textureView, textureViewParams);
 
         TypedArray typedArray = context.obtainStyledAttributes(attrs, R.styleable.CameraPreview);
+        aspectRatio = typedArray.getString(R.styleable.CameraPreview_aspectRatio);
+        autoFocus = typedArray.getBoolean(R.styleable.CameraPreview_autoFocus, true);
+        facing = typedArray.getInt(R.styleable.CameraPreview_facing, Values.FACING_BACK);
+        flash = typedArray.getInt(R.styleable.CameraPreview_flash, Values.FLASH_OFF);
         boolean fillSpace = typedArray.getBoolean(R.styleable.CameraPreview_fillSpace, false);
         textureView.setFillSpace(fillSpace);
         boolean showFocusIndicator = typedArray.getBoolean(R.styleable.CameraPreview_showFocusIndicator, true);
@@ -53,8 +62,35 @@ public class CameraPreview extends RelativeLayout {
         };
     }
 
+    void assign(InternalPhotographer photographer) {
+        photographer.setAspectRatio(AspectRatio.parse(aspectRatio));
+        photographer.setAutoFocus(autoFocus);
+        photographer.setFacing(facing);
+        photographer.setFlash(flash);
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        if (!isInEditMode()) {
+            displayOrientationDetector.enable(ViewCompat.getDisplay(this));
+        }
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        if (!isInEditMode()) {
+            displayOrientationDetector.disable();
+        }
+        super.onDetachedFromWindow();
+    }
+
     AutoFitTextureView getTextureView() {
         return textureView;
+    }
+
+    public boolean isFillSpace() {
+        return textureView.isFillSpace();
     }
 
     public void setFillSpace(boolean fillSpace) {
@@ -85,5 +121,11 @@ public class CameraPreview extends RelativeLayout {
 
     void shot() {
         overlay.shot();
+    }
+
+    public interface Callback extends AutoFitTextureView.Callback { }
+
+    public void addCallback(Callback callback) {
+        textureView.addCallback(callback);
     }
 }

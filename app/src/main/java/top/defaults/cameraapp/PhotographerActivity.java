@@ -9,11 +9,12 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
+import android.widget.CheckBox;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -38,21 +39,24 @@ public class PhotographerActivity extends AppCompatActivity {
     Photographer photographer;
     PhotographerHelper photographerHelper;
     private boolean isRecordingVideo;
-    private Collection<Size> imageSizes;
-    private Collection<Size> videoSizes;
-    private CameraOutputSize selectedSize;
+    private Set<Size> imageSizes;
+    private Set<Size> videoSizes;
+    private Size selectedSize;
 
     @BindView(R.id.preview) CameraPreview preview;
     @BindView(R.id.status) TextView statusTextView;
+
     @BindView(R.id.chooseSize) TextButton chooseSizeButton;
-    @BindView(R.id.action) TextButton actionButton;
+    @BindView(R.id.fillSpace) CheckBox fillSpaceCheckBox;
+
     @BindView(R.id.switch_mode) TextButton switchButton;
+    @BindView(R.id.action) TextButton actionButton;
     @BindView(R.id.flip) TextButton flipButton;
 
     @OnClick(R.id.chooseSize)
     void chooseSize() {
         List<CameraOutputSize> supportedSizes = null;
-        int mode = photographerHelper.getMode();
+        int mode = photographer.getMode();
         if (mode == Values.MODE_VIDEO) {
             if (videoSizes != null && videoSizes.size() > 0) {
                 supportedSizes = CameraOutputSize.supportedSizes(videoSizes);
@@ -71,7 +75,7 @@ public class PhotographerActivity extends AppCompatActivity {
                 @Override
                 public void onDoneClick(PickerDialog<CameraOutputSize> dialog) {
                     CameraOutputSize cameraOutputSize = dialog.getSelectedItem(CameraOutputSize.class);
-                    selectedSize = cameraOutputSize;
+                    selectedSize = cameraOutputSize.size;
                     photographer.setImageSize(cameraOutputSize.size);
                 }
             });
@@ -88,7 +92,7 @@ public class PhotographerActivity extends AppCompatActivity {
 
     @OnClick(R.id.action)
     void action() {
-        int mode = photographerHelper.getMode();
+        int mode = photographer.getMode();
         if (mode == Values.MODE_VIDEO) {
             if (isRecordingVideo) {
                 finishRecordingIfNeeded();
@@ -128,6 +132,7 @@ public class PhotographerActivity extends AppCompatActivity {
         setContentView(R.layout.activity_video_record);
         ButterKnife.bind(this);
 
+        preview.addCallback(() -> fillSpaceCheckBox.setChecked(preview.isFillSpace()));
         preview.setFocusIndicatorDrawer(new CanvasDrawer() {
             private static final int SIZE = 300;
             private static final int LINE_LENGTH = 50;
@@ -172,6 +177,10 @@ public class PhotographerActivity extends AppCompatActivity {
             public void onDeviceConfigured() {
                 imageSizes = photographer.getSupportedImageSizes();
                 videoSizes = photographer.getSupportedVideoSizes();
+                selectedSize = photographer.getImageSize();
+                if (photographer.getMode() == Values.MODE_VIDEO) {
+                    selectedSize = photographer.getVideoSize();
+                }
             }
 
             @Override
@@ -218,7 +227,7 @@ public class PhotographerActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         enterFullscreen();
-        photographer.startPreview(photographer.getCurrentParams());
+        photographer.startPreview();
     }
 
     @Override

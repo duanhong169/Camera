@@ -38,10 +38,8 @@ import android.view.Surface;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -57,8 +55,7 @@ public class Camera2Photographer implements InternalPhotographer {
     private static final int CALLBACK_ON_SHOT_FINISHED = 8;
     private static final int CALLBACK_ON_ERROR = 9;
 
-    private static final int MAX_PREVIEW_WIDTH = 1920;
-    private static final int MAX_PREVIEW_HEIGHT = 1080;
+    private static final int DEFAULT_VIDEO_HEIGHT = 1080;
 
     private static final SparseIntArray INTERNAL_FACINGS = new SparseIntArray();
 
@@ -93,21 +90,28 @@ public class Camera2Photographer implements InternalPhotographer {
     private CallbackHandler callbackHandler;
 
     private boolean isInitialized;
+    private boolean isPreviewStarted;
 
-    private Map<String, Object> params;
     private int mode = Values.MODE_IMAGE;
+    private AspectRatio aspectRatio = Values.DEFAULT_ASPECT_RATIO;
+    private boolean autoFocus = true;
     private int facing = Values.FACING_BACK;
     private int flash = Values.FLASH_OFF;
-    private boolean autoFocus = true;
+
     private boolean isManualFocusEngaged;
 
     private HandlerThread backgroundThread;
     private Handler backgroundHandler;
 
+    private SizeMap previewSizeMap = new SizeMap();
     private SortedSet<Size> supportedPreviewSizes = new TreeSet<>();
     private Size previewSize;
+
+    private SizeMap imageSizeMap = new SizeMap();
     private SortedSet<Size> supportedImageSizes = new TreeSet<>();
     private Size imageSize;
+
+    private SizeMap videoSizeMap = new SizeMap();
     private SortedSet<Size> supportedVideoSizes = new TreeSet<>();
     private Size videoSize;
 
@@ -174,6 +178,13 @@ public class Camera2Photographer implements InternalPhotographer {
         public void onConfigureFailed(@NonNull CameraCaptureSession session) {
             callbackHandler.onError(new Error(Error.ERROR_CAMERA));
         }
+
+        @Override
+        public void onClosed(@NonNull CameraCaptureSession session) {
+            if (captureSession != null && captureSession.equals(session)) {
+                captureSession = null;
+            }
+        }
     };
 
     private ImageCaptureCallback imageCaptureCallback = new ImageCaptureCallback() {
@@ -216,7 +227,7 @@ public class Camera2Photographer implements InternalPhotographer {
         this.textureView = preview.getTextureView();
         cameraManager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
         callbackHandler = new CallbackHandler(activityContext);
-        textureView.setCallback(this::startCaptureSession);
+        textureView.addCallback(this::startCaptureSession);
         isInitialized = true;
     }
 
@@ -233,22 +244,17 @@ public class Camera2Photographer implements InternalPhotographer {
     }
 
     @Override
-    public Collection<Size> getSupportedImageSizes() {
+    public Set<Size> getSupportedImageSizes() {
         return supportedImageSizes;
     }
 
     @Override
-    public Collection<Size> getSupportedVideoSizes() {
+    public Set<Size> getSupportedVideoSizes() {
         return supportedVideoSizes;
     }
 
     @Override
-    public Map<String, Object> getCurrentParams() {
-        return params;
-    }
-
-    @Override
-    public void startPreview(Map<String, Object> params) {
+    public void startPreview() {
         throwIfNotInitialized();
         for (String permission: RECORD_VIDEO_PERMISSIONS) {
             int permissionCheck = ContextCompat.checkSelfPermission(activityContext, permission);
@@ -257,24 +263,17 @@ public class Camera2Photographer implements InternalPhotographer {
                 return;
             }
         }
-
-        this.params = params;
-        int newFacing = Utils.getInt(params, Keys.FACING, Values.FACING_BACK);
-        if (newFacing != facing) {
-            facing = newFacing;
-            // clear the image/video size
-            imageSize = null;
-            videoSize = null;
-        }
-
-        mode = Utils.getInt(params, Keys.MODE, Values.MODE_IMAGE);
         startBackgroundThread();
+
         if (!chooseCameraIdByFacing()) {
             callbackHandler.onError(new Error(Error.ERROR_CAMERA));
         }
         collectCameraInfo();
         prepareWorkers();
+
+        callbackHandler.onDeviceConfigured();
         startOpeningCamera();
+        isPreviewStarted = true;
     }
 
     private boolean chooseCameraIdByFacing() {
@@ -335,6 +334,12 @@ public class Camera2Photographer implements InternalPhotographer {
         }
     }
 
+    private void resetSizes() {
+        // clear the image/video size
+        imageSize = null;
+        videoSize = null;
+    }
+
     private void collectCameraInfo() {
         StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
 
@@ -344,43 +349,55 @@ public class Camera2Photographer implements InternalPhotographer {
             return;
         }
 
-        collectImageSizes(supportedImageSizes, map);
-        if (imageSize == null) {
-            // choose default image size
-            imageSize = supportedImageSizes.last();
-        }
-
-        collectVideoSizes(supportedVideoSizes, map);
-        if (videoSize == null) {
-            // choose default video size
-            videoSize = chooseVideoSize(supportedVideoSizes);
-        }
-
-        Size size = mode == Values.MODE_IMAGE ? imageSize : videoSize;
-
-        collectPreviewSizes(supportedPreviewSizes, map);
-        previewSize = chooseOptimalPreviewSize(size);
+        collectPreviewSizes(map);
+        collectImageSizes(map);
+        collectVideoSizes(map);
+        refineSizes();
     }
 
     private void prepareWorkers() {
+        Size size;
         if (mode == Values.MODE_IMAGE) {
+            if (imageSize == null) {
+                // determine image size
+                SortedSet<Size> sizesWithAspectRatio = imageSizeMap.sizes(aspectRatio);
+                if (sizesWithAspectRatio != null && sizesWithAspectRatio.size() > 0) {
+                    imageSize = sizesWithAspectRatio.last();
+                } else {
+                    imageSize = imageSizeMap.defaultSize();
+                }
+            }
+            size = imageSize;
             imageReader = ImageReader.newInstance(imageSize.getWidth(), imageSize.getHeight(),
                     ImageFormat.JPEG,2);
             imageReader.setOnImageAvailableListener(onImageAvailableListener, null);
         } else if (mode == Values.MODE_VIDEO) {
+            if (videoSize == null) {
+                // determine video size
+                SortedSet<Size> sizesWithAspectRatio = videoSizeMap.sizes(aspectRatio);
+                if (sizesWithAspectRatio != null && sizesWithAspectRatio.size() > 0) {
+                    videoSize = sizesWithAspectRatio.last();
+                } else {
+                    videoSize = chooseVideoSize(supportedVideoSizes);
+                }
+            }
+            size = videoSize;
             mediaRecorder = new MediaRecorder();
+        } else {
+            throw new RuntimeException();
         }
-    }
+        previewSize = chooseOptimalPreviewSize(size);
 
-    @SuppressLint("MissingPermission")
-    private void startOpeningCamera() {
         int orientation = activityContext.getResources().getConfiguration().orientation;
         if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
             textureView.setAspectRatio(previewSize.getWidth(), previewSize.getHeight());
         } else {
             textureView.setAspectRatio(previewSize.getHeight(), previewSize.getWidth());
         }
-        callbackHandler.onDeviceConfigured();
+    }
+
+    @SuppressLint("MissingPermission")
+    private void startOpeningCamera() {
         try {
             cameraManager.openCamera(cameraId, cameraDeviceCallback, null);
         } catch (CameraAccessException e) {
@@ -389,21 +406,118 @@ public class Camera2Photographer implements InternalPhotographer {
     }
 
     @Override
+    public void restartPreview() {
+        if (isPreviewStarted) {
+            stopPreview();
+            startPreview();
+        }
+    }
+
+    @Override
+    public void stopPreview() {
+        isPreviewStarted = false;
+        throwIfNotInitialized();
+        closeCamera();
+        stopBackgroundThread();
+    }
+
+    @Override
+    public Size getPreviewSize() {
+        return previewSize;
+    }
+
+    @Override
+    public Size getImageSize() {
+        return imageSize;
+    }
+
+    @Override
     public void setImageSize(Size size) {
+        if (size == null || !supportedImageSizes.contains(size)) {
+            callbackHandler.onError(new Error(Error.ERROR_INVALID_PARAM, size + " not supported."));
+            return;
+        }
+
+        if (imageSize.equals(size)) {
+            return;
+        }
+
+        resetSizes();
         imageSize = size;
-        restartPreview(null);
+        restartPreview();
+    }
+
+    @Override
+    public Size getVideoSize() {
+        return videoSize;
     }
 
     @Override
     public void setVideoSize(Size size) {
+        if (size == null || !supportedVideoSizes.contains(size)) {
+            callbackHandler.onError(new Error(Error.ERROR_INVALID_PARAM, size + " not supported."));
+            return;
+        }
+
+        if (videoSize.equals(size)) {
+            return;
+        }
+
+        resetSizes();
         videoSize = size;
-        restartPreview(null);
+        restartPreview();
+    }
+
+    @Override
+    public Set<AspectRatio> getSupportedAspectRatios() {
+        return previewSizeMap.ratios();
+    }
+
+    @Override
+    public void setAspectRatio(AspectRatio ratio) {
+        if (!isPreviewStarted) {
+            aspectRatio = ratio;
+            return;
+        }
+
+        if (ratio == null || !previewSizeMap.ratios().contains(ratio)) {
+            callbackHandler.onError(new Error(Error.ERROR_INVALID_PARAM, ratio + " not supported."));
+            return;
+        }
+        if (ratio.equals(aspectRatio)) {
+            return;
+        }
+        resetSizes();
+        aspectRatio = ratio;
+        restartPreview();
+    }
+
+    @Override
+    public AspectRatio getAspectRatio() {
+        return aspectRatio;
+    }
+
+    @Override
+    public void setAutoFocus(boolean autoFocus) {
+        if (this.autoFocus == autoFocus) {
+            return;
+        }
+        this.autoFocus = autoFocus;
+        if (previewRequestBuilder != null) {
+            updateAutoFocus();
+            updatePreview(() -> this.autoFocus = !this.autoFocus);
+        }
+    }
+
+    @Override
+    public boolean getAutoFocus() {
+        return autoFocus;
     }
 
     @Override
     public void setFacing(int facing) {
         this.facing = facing;
-        restartPreview(null);
+        restartPreview();
     }
 
     @Override
@@ -411,35 +525,82 @@ public class Camera2Photographer implements InternalPhotographer {
         return facing;
     }
 
-    private void collectImageSizes(SortedSet<Size> sizes, StreamConfigurationMap map) {
-        sizes.clear();
-        for (android.util.Size size : map.getOutputSizes(ImageFormat.JPEG)) {
-            sizes.add(new Size(size.getWidth(), size.getHeight()));
+    @Override
+    public void setFlash(int flash) {
+        if (this.flash == flash) {
+            return;
+        }
+        int saved = this.flash;
+        this.flash = flash;
+        if (previewRequestBuilder != null) {
+            updateFlash();
+            updatePreview(() -> this.flash = saved);
         }
     }
 
-    private void collectVideoSizes(SortedSet<Size> sizes, StreamConfigurationMap map) {
-        sizes.clear();
-        for (android.util.Size size : map.getOutputSizes(MediaRecorder.class)) {
-            sizes.add(new Size(size.getWidth(), size.getHeight()));
-        }
+    @Override
+    public int getFlash() {
+        return flash;
     }
 
-    private void collectPreviewSizes(SortedSet<Size> sizes, StreamConfigurationMap map) {
-        sizes.clear();
+    @Override
+    public void setMode(int mode) {
+        this.mode = mode;
+        restartPreview();
+    }
+
+    @Override
+    public int getMode() {
+        return mode;
+    }
+
+    private void collectPreviewSizes(StreamConfigurationMap map) {
+        supportedPreviewSizes.clear();
         for (android.util.Size size : map.getOutputSizes(SurfaceTexture.class)) {
-            int width = size.getWidth();
-            int height = size.getHeight();
-            if (width <= MAX_PREVIEW_WIDTH && height <= MAX_PREVIEW_HEIGHT) {
-                supportedPreviewSizes.add(new Size(width, height));
+            Size s = new Size(size.getWidth(), size.getHeight());
+            supportedPreviewSizes.add(s);
+            previewSizeMap.add(s);
+        }
+    }
+
+    private void collectImageSizes(StreamConfigurationMap map) {
+        supportedImageSizes.clear();
+        for (android.util.Size size : map.getOutputSizes(ImageFormat.JPEG)) {
+            Size s = new Size(size.getWidth(), size.getHeight());
+            supportedImageSizes.add(s);
+            imageSizeMap.add(s);
+        }
+    }
+
+    private void collectVideoSizes(StreamConfigurationMap map) {
+        supportedVideoSizes.clear();
+        for (android.util.Size size : map.getOutputSizes(MediaRecorder.class)) {
+            Size s = new Size(size.getWidth(), size.getHeight());
+            supportedVideoSizes.add(s);
+            videoSizeMap.add(s);
+        }
+    }
+
+    private void refineSizes() {
+        for (AspectRatio ratio : previewSizeMap.ratios()) {
+            if ((mode == Values.MODE_VIDEO && !videoSizeMap.ratios().contains(ratio))
+                    || (mode == Values.MODE_IMAGE && !imageSizeMap.ratios().contains(ratio))) {
+                if (previewSizeMap.sizes(ratio) != null) {
+                    supportedPreviewSizes.removeAll(previewSizeMap.sizes(ratio));
+                }
+                previewSizeMap.remove(ratio);
             }
+        }
+
+        if (!previewSizeMap.ratios().contains(aspectRatio)) {
+            aspectRatio = previewSizeMap.ratios().iterator().next();
         }
     }
 
     private static Size chooseVideoSize(SortedSet<Size> choices) {
         Size chosen = null;
         for (Size size : choices) {
-            if (size.getWidth() == size.getHeight() * 4 / 3 && size.getHeight() <= MAX_PREVIEW_HEIGHT) {
+            if (size.getWidth() == size.getHeight() * 4 / 3 && size.getHeight() <= DEFAULT_VIDEO_HEIGHT) {
                 chosen = size;
             }
         }
@@ -459,13 +620,22 @@ public class Camera2Photographer implements InternalPhotographer {
             surfaceShorter = surfaceHeight;
         }
 
+        AspectRatio preferredAspectRatio = AspectRatio.of(surfaceLonger, surfaceShorter);
         // Pick the smallest of those big enough
         for (Size size : supportedPreviewSizes) {
-            if (size.getWidth() >= surfaceLonger && size.getHeight() >= surfaceShorter) {
+            if (preferredAspectRatio.matches(size)
+                    && size.getWidth() >= surfaceLonger && size.getHeight() >= surfaceShorter) {
                 return size;
             }
         }
-        // If no size is big enough, pick the largest one.
+
+        // If no size is big enough, pick the largest one which matches the ratio.
+        SortedSet<Size> matchedSizes = previewSizeMap.sizes(preferredAspectRatio);
+        if (matchedSizes != null && matchedSizes.size() > 0) {
+            return matchedSizes.last();
+        }
+
+        // If no size is big enough or ratio cannot be matched, pick the largest one.
         return supportedPreviewSizes.last();
     }
 
@@ -493,8 +663,6 @@ public class Camera2Photographer implements InternalPhotographer {
             return;
         }
         try {
-            closePreviewSession();
-
             textureView.setBufferSize(previewSize.getWidth(), previewSize.getHeight());
             previewRequestBuilder = camera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
             Surface previewSurface = textureView.getSurface();
@@ -511,23 +679,6 @@ public class Camera2Photographer implements InternalPhotographer {
         } catch (CameraAccessException e) {
             callbackHandler.onError(new Error(Error.ERROR_CAMERA, e));
         }
-    }
-
-    @Override
-    public void setAutoFocus(boolean autoFocus) {
-        if (this.autoFocus == autoFocus) {
-            return;
-        }
-        this.autoFocus = autoFocus;
-        if (previewRequestBuilder != null) {
-            updateAutoFocus();
-            updatePreview(() -> this.autoFocus = !this.autoFocus);
-        }
-    }
-
-    @Override
-    public boolean getAutoFocus() {
-        return autoFocus;
     }
 
     private void updateAutoFocus() {
@@ -553,24 +704,6 @@ public class Camera2Photographer implements InternalPhotographer {
         }
     }
 
-    @Override
-    public void setFlash(int flash) {
-        if (this.flash == flash) {
-            return;
-        }
-        int saved = this.flash;
-        this.flash = flash;
-        if (previewRequestBuilder != null) {
-            updateFlash();
-            updatePreview(() -> this.flash = saved);
-        }
-    }
-
-    @Override
-    public int getFlash() {
-        return flash;
-    }
-
     private void updateFlash() {
         switch (flash) {
             case Values.FLASH_OFF:
@@ -594,26 +727,6 @@ public class Camera2Photographer implements InternalPhotographer {
                 previewRequestBuilder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_OFF);
                 break;
         }
-    }
-
-    @Override
-    public void restartPreview(Map<String, Object> params) {
-        stopPreview();
-        Map<String, Object> mergedParams = new HashMap<>();
-        if (this.params != null) {
-            mergedParams.putAll(this.params);
-        }
-        if (params != null) {
-            mergedParams.putAll(params);
-        }
-        startPreview(mergedParams);
-    }
-
-    @Override
-    public void stopPreview() {
-        throwIfNotInitialized();
-        closeCamera();
-        stopBackgroundThread();
     }
 
     @Override
