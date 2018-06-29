@@ -1,10 +1,14 @@
 package top.defaults.cameraapp.options;
 
+import android.os.Environment;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 public class Commons {
+
+    public static final String MEDIA_DIR = Environment.getExternalStorageDirectory().getPath() + "/0/dev/CameraApp";
 
     public static <T, W extends PickerItemWrapper<T>> List<W> wrapItems(Collection<T> items, PickerItemWrapper.WrapperFactory<T, W> factory) {
         List<W> wrappedItems = new ArrayList<>();

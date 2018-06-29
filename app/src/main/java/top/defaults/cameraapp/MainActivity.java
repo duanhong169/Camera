@@ -9,7 +9,6 @@ import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
@@ -18,6 +17,7 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.GridView;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
@@ -31,14 +31,13 @@ import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import top.defaults.cameraapp.options.Commons;
 
 public class MainActivity extends AppCompatActivity {
 
-    public static final String EXTRA_RECORDED_VIDEO_FILE_PATH = "extra_recorded_video_file_path";
-    public static final String EXTRA_CAPTURED_IMAGE_FILE_PATH = "extra_captured_image_file_path";
-
     private View prepareToRecord;
 
+    @BindView(R.id.media_dir) TextView mediaDir;
     @BindView(R.id.gallery) GridView gallery;
     private List<File> mediaFiles = new ArrayList<>();
     private MediaFileAdapter adapter;
@@ -64,6 +63,8 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
 
+        mediaDir.setText(String.format("Media files are saved under:\n%s", Commons.MEDIA_DIR));
+
         adapter = new MediaFileAdapter(this, mediaFiles);
         gallery.setAdapter(adapter);
         gallery.setOnItemClickListener((parent, view, position, id) -> {
@@ -80,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM) + "/CameraApp/");
+        File file = new File(Commons.MEDIA_DIR);
         if (file.isDirectory()) {
             mediaFiles.clear();
             File[] files = file.listFiles();

@@ -19,6 +19,12 @@
             android:padding="8dp"
             android:text="@string/open_camera"/>
 
+        <TextView
+            android:id="@+id/media_dir"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp"/>
+
         <GridView
             android:id="@+id/gallery"
             android:layout_width="match_parent"

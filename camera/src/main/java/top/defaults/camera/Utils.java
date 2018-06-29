@@ -1,13 +1,19 @@
 package top.defaults.camera;
 
+import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Environment;
+
+import java.io.File;
+import java.io.IOException;
 import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static top.defaults.camera.Error.ERROR_DEFAULT_CODE;
-
-class Utils {
+@SuppressWarnings("unused")
+public class Utils {
 
     private static Pattern pattern = Pattern.compile("^#(\\d+), (.+)");
 
@@ -44,7 +50,7 @@ class Utils {
     }
 
     static Error errorFromThrowable(Throwable throwable) {
-        return errorFromThrowable(throwable, ERROR_DEFAULT_CODE);
+        return errorFromThrowable(throwable, Error.ERROR_DEFAULT_CODE);
     }
 
     private static Error errorFromThrowable(Throwable throwable, int fallback) {
@@ -105,5 +111,38 @@ class Utils {
             }
         }
         return value;
+    }
+
+    public static void addMediaToGallery(Context context, String photoPath) {
+        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+        File photoFile = new File(photoPath);
+        Uri contentUri = Uri.fromFile(photoFile);
+        mediaScanIntent.setData(contentUri);
+        context.sendBroadcast(mediaScanIntent);
+    }
+
+    static String getImageFilePath() throws IOException {
+        return getFilePath(".jpg");
+    }
+
+    static String getVideoFilePath() throws IOException {
+        return getFilePath(".mp4");
+    }
+
+    private static String fileDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM) + "/TopDefaultsCamera/";
+
+    static void setFileDir(String fileDir) {
+        Utils.fileDir = fileDir;
+    }
+
+    private static String getFilePath(String fileSuffix) throws IOException {
+        final File dir = new File(fileDir);
+        if (!dir.exists()) {
+            boolean result = dir.mkdirs();
+            if (!result) {
+                throw new IOException(Utils.exceptionMessage(Error.ERROR_STORAGE, "Unable to create folder"));
+            }
+        }
+        return dir.getAbsolutePath() + "/" + System.currentTimeMillis() + fileSuffix;
     }
 }

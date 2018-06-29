@@ -1,6 +1,5 @@
 package top.defaults.cameraapp;
 
-import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -28,6 +27,7 @@ import top.defaults.camera.Photographer;
 import top.defaults.camera.PhotographerFactory;
 import top.defaults.camera.PhotographerHelper;
 import top.defaults.camera.Size;
+import top.defaults.camera.Utils;
 import top.defaults.camera.Values;
 import top.defaults.cameraapp.dialog.PickerDialog;
 import top.defaults.cameraapp.dialog.SimplePickerDialog;
@@ -154,10 +154,7 @@ public class PhotographerActivity extends AppCompatActivity {
             } else {
                 isRecordingVideo = true;
                 photographer.startRecording(null);
-
                 actionButton.setEnabled(false);
-                switchButton.setVisibility(View.INVISIBLE);
-                flipButton.setVisibility(View.INVISIBLE);
             }
         } else if (mode == Values.MODE_IMAGE) {
             photographer.takePicture();
@@ -219,6 +216,7 @@ public class PhotographerActivity extends AppCompatActivity {
         });
         photographer = PhotographerFactory.createPhotographerWithCamera2(this, preview);
         photographerHelper = new PhotographerHelper(photographer);
+        photographerHelper.setFileDir(Commons.MEDIA_DIR);
         photographer.setOnEventListener(new Photographer.OnEventListener() {
             @Override
             public void onDeviceConfigured() {
@@ -245,6 +243,8 @@ public class PhotographerActivity extends AppCompatActivity {
 
             @Override
             public void onStartRecording() {
+                switchButton.setVisibility(View.INVISIBLE);
+                flipButton.setVisibility(View.INVISIBLE);
                 actionButton.setEnabled(true);
                 actionButton.setImageResource(R.drawable.stop);
                 statusTextView.setVisibility(View.VISIBLE);
@@ -252,18 +252,12 @@ public class PhotographerActivity extends AppCompatActivity {
 
             @Override
             public void onFinishRecording(String filePath) {
-                Toast.makeText(PhotographerActivity.this, "File: " + filePath, Toast.LENGTH_SHORT).show();
-                Intent data = new Intent();
-                data.putExtra(MainActivity.EXTRA_RECORDED_VIDEO_FILE_PATH, filePath);
-                setResult(RESULT_OK, data);
+                announcingNewFile(filePath);
             }
 
             @Override
             public void onShotFinished(String filePath) {
-                Toast.makeText(PhotographerActivity.this, "File: " + filePath, Toast.LENGTH_SHORT).show();
-                Intent data = new Intent();
-                data.putExtra(MainActivity.EXTRA_CAPTURED_IMAGE_FILE_PATH, filePath);
-                setResult(RESULT_OK, data);
+                announcingNewFile(filePath);
             }
 
             @Override
@@ -309,5 +303,10 @@ public class PhotographerActivity extends AppCompatActivity {
             actionButton.setEnabled(true);
             actionButton.setImageResource(R.drawable.record);
         }
+    }
+
+    private void announcingNewFile(String filePath) {
+        Toast.makeText(PhotographerActivity.this, "File: " + filePath, Toast.LENGTH_SHORT).show();
+        Utils.addMediaToGallery(PhotographerActivity.this, filePath);
     }
 }

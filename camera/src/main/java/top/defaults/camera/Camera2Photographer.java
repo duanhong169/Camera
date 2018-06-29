@@ -4,7 +4,6 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.ImageFormat;
@@ -23,9 +22,7 @@ import android.hardware.camera2.params.MeteringRectangle;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.ImageReader;
 import android.media.MediaRecorder;
-import android.net.Uri;
 import android.os.Build;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
@@ -35,7 +32,6 @@ import android.util.SparseIntArray;
 import android.view.MotionEvent;
 import android.view.Surface;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -51,10 +47,12 @@ public class Camera2Photographer implements InternalPhotographer {
     private static final int CALLBACK_ON_PREVIEW_STARTED = 2;
     private static final int CALLBACK_ON_PREVIEW_STOPPED = 3;
     private static final int CALLBACK_ON_START_RECORDING = 4;
-    private static final int CALLBACK_ON_FINISH_RECORDING = 7;
-    private static final int CALLBACK_ON_SHOT_FINISHED = 8;
-    private static final int CALLBACK_ON_ERROR = 9;
+    private static final int CALLBACK_ON_FINISH_RECORDING = 5;
+    private static final int CALLBACK_ON_SHOT_FINISHED = 6;
+    private static final int CALLBACK_ON_ERROR = 7;
 
+    // we don't use sizes larger than 1080p, since MediaRecorder
+    // cannot handle such a high-resolution video.
     private static final int MAX_VIDEO_HEIGHT = 1080;
 
     private static final SparseIntArray INTERNAL_FACINGS = new SparseIntArray();
@@ -735,7 +733,12 @@ public class Camera2Photographer implements InternalPhotographer {
 
     @Override
     public void takePicture() {
-        nextImageAbsolutePath = getImageFilePath();
+        try {
+            nextImageAbsolutePath = Utils.getImageFilePath();
+        } catch (IOException e) {
+            callbackHandler.onError(Utils.errorFromThrowable(e));
+            return;
+        }
         if (autoFocus) {
             lockFocus();
         } else {
@@ -751,6 +754,14 @@ public class Camera2Photographer implements InternalPhotographer {
             callbackHandler.onError(new Error(Error.ERROR_CAMERA));
             return;
         }
+
+        try {
+            nextVideoAbsolutePath = Utils.getVideoFilePath();
+        } catch (IOException e) {
+            callbackHandler.onError(Utils.errorFromThrowable(e));
+            return;
+        }
+
         try {
             closePreviewSession();
             setUpMediaRecorder(configurator);
@@ -784,8 +795,10 @@ public class Camera2Photographer implements InternalPhotographer {
                     callbackHandler.onError(new Error(Error.ERROR_CAMERA));
                 }
             }, null);
-        } catch (CameraAccessException | IOException e) {
+        } catch (CameraAccessException e) {
             callbackHandler.onError(new Error(Error.ERROR_CAMERA, e));
+        } catch (IOException e) {
+            callbackHandler.onError(Utils.errorFromThrowable(e));
         }
     }
 
@@ -794,7 +807,6 @@ public class Camera2Photographer implements InternalPhotographer {
             mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
             mediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
             mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
-            nextVideoAbsolutePath = getVideoFilePath();
             mediaRecorder.setOutputFile(nextVideoAbsolutePath);
             mediaRecorder.setVideoEncodingBitRate(10000000);
             mediaRecorder.setVideoFrameRate(30);
@@ -839,7 +851,6 @@ public class Camera2Photographer implements InternalPhotographer {
         mediaRecorder.stop();
         mediaRecorder.reset();
         callbackHandler.onFinishRecording(nextVideoAbsolutePath);
-        addMediaToGallery(activityContext, nextVideoAbsolutePath);
         startCaptureSession();
     }
 
@@ -903,7 +914,6 @@ public class Camera2Photographer implements InternalPhotographer {
                                                        @NonNull TotalCaptureResult result) {
                             unlockFocus();
                             callbackHandler.onShotFinished(nextImageAbsolutePath);
-                            addMediaToGallery(activityContext, nextImageAbsolutePath);
                         }
 
                         @Override
@@ -945,33 +955,6 @@ public class Camera2Photographer implements InternalPhotographer {
                 break;
         }
         return degree;
-    }
-
-    private static void addMediaToGallery(Context context, String photoPath) {
-        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-        File photoFile = new File(photoPath);
-        Uri contentUri = Uri.fromFile(photoFile);
-        mediaScanIntent.setData(contentUri);
-        context.sendBroadcast(mediaScanIntent);
-    }
-
-    private String getImageFilePath() {
-        return getFilePath(".jpg");
-    }
-
-    private String getVideoFilePath() {
-        return getFilePath(".mp4");
-    }
-
-    private String getFilePath(String fileSuffix) {
-        final File dir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM) + "/CameraApp/");
-        if (!dir.exists()) {
-            boolean result = dir.mkdirs();
-            if (!result) {
-                callbackHandler.onError(new Error(Error.ERROR_STORAGE));
-            }
-        }
-        return dir.getAbsolutePath() + "/" + System.currentTimeMillis() + fileSuffix;
     }
 
     private void startBackgroundThread() {
