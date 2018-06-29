@@ -21,7 +21,7 @@ import butterknife.ButterKnife;
 import butterknife.OnCheckedChanged;
 import butterknife.OnClick;
 import timber.log.Timber;
-import top.defaults.camera.CameraPreview;
+import top.defaults.camera.CameraView;
 import top.defaults.camera.CanvasDrawer;
 import top.defaults.camera.Error;
 import top.defaults.camera.Photographer;
@@ -42,7 +42,7 @@ public class PhotographerActivity extends AppCompatActivity {
     PhotographerHelper photographerHelper;
     private boolean isRecordingVideo;
 
-    @BindView(R.id.preview) CameraPreview preview;
+    @BindView(R.id.preview) CameraView preview;
     @BindView(R.id.status) TextView statusTextView;
 
     @BindView(R.id.chooseSize) TextButton chooseSizeButton;

@@ -9,11 +9,11 @@ import android.util.AttributeSet;
 import android.view.ViewGroup;
 import android.widget.RelativeLayout;
 
-public class CameraPreview extends RelativeLayout {
+public class CameraView extends RelativeLayout {
 
     private Context context;
     private AutoFitTextureView textureView;
-    private CameraPreviewOverlay overlay;
+    private CameraViewOverlay overlay;
     private final DisplayOrientationDetector displayOrientationDetector;
     String aspectRatio;
     boolean autoFocus;
@@ -21,15 +21,15 @@ public class CameraPreview extends RelativeLayout {
     int flash;
     int mode;
 
-    public CameraPreview(@NonNull Context context) {
+    public CameraView(@NonNull Context context) {
         this(context, null);
     }
 
-    public CameraPreview(@NonNull Context context, @Nullable AttributeSet attrs) {
+    public CameraView(@NonNull Context context, @Nullable AttributeSet attrs) {
         this(context, attrs, 0);
     }
 
-    public CameraPreview(@NonNull Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
+    public CameraView(@NonNull Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
 
         this.context = context;
@@ -39,15 +39,15 @@ public class CameraPreview extends RelativeLayout {
         textureViewParams.addRule(CENTER_IN_PARENT);
         addView(textureView, textureViewParams);
 
-        TypedArray typedArray = context.obtainStyledAttributes(attrs, R.styleable.CameraPreview);
-        aspectRatio = typedArray.getString(R.styleable.CameraPreview_aspectRatio);
-        autoFocus = typedArray.getBoolean(R.styleable.CameraPreview_autoFocus, true);
-        facing = typedArray.getInt(R.styleable.CameraPreview_facing, Values.FACING_BACK);
-        flash = typedArray.getInt(R.styleable.CameraPreview_flash, Values.FLASH_OFF);
-        mode = typedArray.getInt(R.styleable.CameraPreview_mode, Values.MODE_IMAGE);
-        boolean fillSpace = typedArray.getBoolean(R.styleable.CameraPreview_fillSpace, false);
+        TypedArray typedArray = context.obtainStyledAttributes(attrs, R.styleable.CameraView);
+        aspectRatio = typedArray.getString(R.styleable.CameraView_aspectRatio);
+        autoFocus = typedArray.getBoolean(R.styleable.CameraView_autoFocus, true);
+        facing = typedArray.getInt(R.styleable.CameraView_facing, Values.FACING_BACK);
+        flash = typedArray.getInt(R.styleable.CameraView_flash, Values.FLASH_OFF);
+        mode = typedArray.getInt(R.styleable.CameraView_mode, Values.MODE_IMAGE);
+        boolean fillSpace = typedArray.getBoolean(R.styleable.CameraView_fillSpace, false);
         textureView.setFillSpace(fillSpace);
-        boolean showFocusIndicator = typedArray.getBoolean(R.styleable.CameraPreview_showFocusIndicator, true);
+        boolean showFocusIndicator = typedArray.getBoolean(R.styleable.CameraView_showFocusIndicator, true);
         typedArray.recycle();
 
         addOverlay();
@@ -101,7 +101,7 @@ public class CameraPreview extends RelativeLayout {
     }
 
     private void addOverlay() {
-        overlay = new CameraPreviewOverlay(context);
+        overlay = new CameraViewOverlay(context);
         LayoutParams overlayParams = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         overlayParams.addRule(ALIGN_LEFT, R.id.textureView);
         overlayParams.addRule(ALIGN_TOP, R.id.textureView);

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <declare-styleable name="CameraPreview">
+    <declare-styleable name="CameraView">
         <attr name="aspectRatio" format="string"/>
         <attr name="autoFocus" format="boolean"/>
         <attr name="facing" format="enum">

@@ -16,22 +16,22 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.animation.DecelerateInterpolator;
 
-class CameraPreviewOverlay extends SurfaceView {
+class CameraViewOverlay extends SurfaceView {
 
     private SurfaceHolder holder;
     private Point focusPoint;
     private CanvasDrawer canvasDrawer;
     private Paint[] paints;
 
-    public CameraPreviewOverlay(Context context) {
+    public CameraViewOverlay(Context context) {
         this(context, null);
     }
 
-    public CameraPreviewOverlay(Context context, AttributeSet attrs) {
+    public CameraViewOverlay(Context context, AttributeSet attrs) {
         this(context, attrs, 0);
     }
 
-    public CameraPreviewOverlay(Context context, AttributeSet attrs, int defStyleAttr) {
+    public CameraViewOverlay(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         setZOrderOnTop(true);
         holder = getHolder();

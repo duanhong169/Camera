@@ -85,7 +85,7 @@ public class Camera2Photographer implements InternalPhotographer {
     }
 
     private Activity activityContext;
-    private CameraPreview preview;
+    private CameraView preview;
     private AutoFitTextureView textureView;
     private CallbackHandler callbackHandler;
 
@@ -221,7 +221,7 @@ public class Camera2Photographer implements InternalPhotographer {
     };
 
     @Override
-    public void initWithViewfinder(Activity activity, CameraPreview preview) {
+    public void initWithViewfinder(Activity activity, CameraView preview) {
         this.activityContext = activity;
         this.preview = preview;
         this.textureView = preview.getTextureView();
