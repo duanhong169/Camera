@@ -2,44 +2,53 @@ package top.defaults.cameraapp;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
-import android.text.TextUtils;
 import android.view.View;
-import android.widget.TextView;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.GridView;
+import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
 import com.jakewharton.rxbinding2.view.RxView;
 import com.tbruyelle.rxpermissions2.RxPermissions;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
 
 public class MainActivity extends AppCompatActivity {
 
     public static final String EXTRA_RECORDED_VIDEO_FILE_PATH = "extra_recorded_video_file_path";
     public static final String EXTRA_CAPTURED_IMAGE_FILE_PATH = "extra_captured_image_file_path";
 
-    private static final int REQUEST_CAMERA = 2;
-
     private View prepareToRecord;
-    private View playLayout;
-    private TextView play;
-    private TextView fileInfo;
+
+    @BindView(R.id.gallery) GridView gallery;
+    private List<File> mediaFiles = new ArrayList<>();
+    private MediaFileAdapter adapter;
 
     @SuppressLint("CheckResult")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        ButterKnife.bind(this);
 
         RxPermissions rxPermissions = new RxPermissions(this);
         prepareToRecord = findViewById(R.id.open_camera);
@@ -55,50 +64,100 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
 
-        playLayout = findViewById(R.id.play_layout);
-        play = findViewById(R.id.play);
-        fileInfo = findViewById(R.id.file_info);
+        adapter = new MediaFileAdapter(this, mediaFiles);
+        gallery.setAdapter(adapter);
+        gallery.setOnItemClickListener((parent, view, position, id) -> {
+            File file = adapter.getItem(position);
+            playOrViewMedia(file);
+        });
     }
 
     private void startVideoRecordActivity() {
-        playLayout.setVisibility(View.GONE);
-        play.setText(R.string.play);
-        fileInfo.setText("");
-        play.setOnClickListener(null);
-
         Intent intent = new Intent(this, PhotographerActivity.class);
-        startActivityForResult(intent, REQUEST_CAMERA);
+        startActivity(intent);
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (resultCode == RESULT_OK && requestCode == REQUEST_CAMERA) {
-            String filePath = data.getStringExtra(EXTRA_RECORDED_VIDEO_FILE_PATH);
-            if (!TextUtils.isEmpty(filePath)) {
-                File file = new File(filePath);
-                play.setText(String.format(Locale.US, getString(R.string.play_file), file.getName()));
-                fileInfo.setText(String.format(Locale.US, "File size：%dB", file.length()));
-                playLayout.setVisibility(View.VISIBLE);
-                play.setOnClickListener(view -> {
-                    Intent intent = new Intent(Intent.ACTION_VIEW);
-                    Uri videoURI = FileProvider.getUriForFile(MainActivity.this, getApplicationContext().getPackageName() + ".provider", file);
-                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
-                        videoURI = Uri.fromFile(file);
-                    }
-                    intent.setDataAndType(videoURI, "action/mp4");
-                    intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
-                    PackageManager packageManager = getPackageManager();
-                    List<ResolveInfo> activities = packageManager.queryIntentActivities(intent, 0);
-                    boolean isIntentSafe = activities.size() > 0;
-
-                    if (isIntentSafe) {
-                        startActivity(intent);
-                    } else {
-                        Toast.makeText(MainActivity.this, "No action player found", Toast.LENGTH_SHORT).show();
-                    }
-                });
-            }
+    protected void onResume() {
+        super.onResume();
+        File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM) + "/CameraApp/");
+        if (file.isDirectory()) {
+            mediaFiles.clear();
+            File[] files = file.listFiles();
+            Arrays.sort(files, (f1, f2) -> {
+                if (f1.lastModified() - f2.lastModified() == 0) {
+                    return 0;
+                } else {
+                    return f1.lastModified() - f2.lastModified() > 0 ? -1 : 1;
+                }
+            });
+            mediaFiles.addAll(Arrays.asList(files));
+            adapter.notifyDataSetChanged();
         }
+    }
+
+    private void playOrViewMedia(File file) {
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        Uri uriForFile = FileProvider.getUriForFile(MainActivity.this, getApplicationContext().getPackageName() + ".provider", file);
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+            uriForFile = Uri.fromFile(file);
+        }
+        intent.setDataAndType(uriForFile, isVideo(file) ? "video/mp4" : "image/jpg");
+        intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+        PackageManager packageManager = getPackageManager();
+        List<ResolveInfo> activities = packageManager.queryIntentActivities(intent, 0);
+        boolean isIntentSafe = activities.size() > 0;
+
+        if (isIntentSafe) {
+            startActivity(intent);
+        } else {
+            Toast.makeText(MainActivity.this, "No media viewer found", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private class MediaFileAdapter extends BaseAdapter {
+
+        private List<File> files;
+
+        private Context context;
+
+        MediaFileAdapter(Context c, List<File> files) {
+            context = c;
+            this.files = files;
+        }
+
+        public int getCount() {
+            return files.size();
+        }
+
+        public File getItem(int position) {
+            return files.get(position);
+        }
+
+        public long getItemId(int position) {
+            return position;
+        }
+
+        public View getView(int position, View convertView, ViewGroup parent) {
+            ImageView imageView;
+            if (convertView == null) {
+                convertView = getLayoutInflater().inflate(R.layout.item_media, parent, false);
+            }
+            imageView = convertView.findViewById(R.id.item_image);
+            View indicator = convertView.findViewById(R.id.item_indicator);
+            File file = getItem(position);
+            if (isVideo(file)) {
+                indicator.setVisibility(View.VISIBLE);
+            } else {
+                indicator.setVisibility(View.GONE);
+            }
+            Glide.with(context).load(file).into(imageView);
+            return convertView;
+        }
+    }
+
+    private boolean isVideo(File file) {
+        return file != null && file.getName().endsWith(".mp4");
     }
 }

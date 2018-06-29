@@ -3,7 +3,6 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:tools="http://schemas.android.com/tools"
     android:fitsSystemWindows="true">
 
     <LinearLayout
@@ -20,30 +19,15 @@
             android:padding="8dp"
             android:text="@string/open_camera"/>
 
-        <LinearLayout
-            android:id="@+id/play_layout"
+        <GridView
+            android:id="@+id/gallery"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:visibility="gone"
-            tools:visibility="visible">
-
-            <top.defaults.view.TextButton
-                android:id="@+id/play"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="8dp"
-                android:gravity="center"
-                android:padding="8dp"
-                android:text="@string/play"/>
-
-            <TextView
-                android:id="@+id/file_info"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="8dp"/>
-
-        </LinearLayout>
+            android:layout_height="match_parent"
+            android:numColumns="4"
+            android:horizontalSpacing="1dp"
+            android:verticalSpacing="1dp"
+            android:stretchMode="columnWidth"
+            android:gravity="center"/>
 
     </LinearLayout>
 </android.support.design.widget.CoordinatorLayout>
