@@ -55,7 +55,7 @@ public class Camera2Photographer implements InternalPhotographer {
     private static final int CALLBACK_ON_SHOT_FINISHED = 8;
     private static final int CALLBACK_ON_ERROR = 9;
 
-    private static final int DEFAULT_VIDEO_HEIGHT = 1080;
+    private static final int MAX_VIDEO_HEIGHT = 1080;
 
     private static final SparseIntArray INTERNAL_FACINGS = new SparseIntArray();
 
@@ -335,7 +335,8 @@ public class Camera2Photographer implements InternalPhotographer {
     }
 
     private void resetSizes() {
-        // clear the image/video size
+        // clear the image/video size & aspect ratio
+        aspectRatio = null;
         imageSize = null;
         videoSize = null;
     }
@@ -575,6 +576,7 @@ public class Camera2Photographer implements InternalPhotographer {
     private void collectVideoSizes(StreamConfigurationMap map) {
         supportedVideoSizes.clear();
         for (android.util.Size size : map.getOutputSizes(MediaRecorder.class)) {
+            if (size.getHeight() > MAX_VIDEO_HEIGHT) continue;
             Size s = new Size(size.getWidth(), size.getHeight());
             supportedVideoSizes.add(s);
             videoSizeMap.add(s);
@@ -600,7 +602,7 @@ public class Camera2Photographer implements InternalPhotographer {
     private static Size chooseVideoSize(SortedSet<Size> choices) {
         Size chosen = null;
         for (Size size : choices) {
-            if (size.getWidth() == size.getHeight() * 4 / 3 && size.getHeight() <= DEFAULT_VIDEO_HEIGHT) {
+            if (size.getWidth() == size.getHeight() * 4 / 3 && size.getHeight() <= MAX_VIDEO_HEIGHT) {
                 chosen = size;
             }
         }
@@ -750,14 +752,13 @@ public class Camera2Photographer implements InternalPhotographer {
         }
         try {
             closePreviewSession();
-
             setUpMediaRecorder(configurator);
             previewRequestBuilder = camera.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
-            Surface previewSurface = textureView.getSurface();
-            previewRequestBuilder.addTarget(previewSurface);
-
             List<Surface> surfaces = new ArrayList<>();
+
+            Surface previewSurface = textureView.getSurface();
             surfaces.add(previewSurface);
+            previewRequestBuilder.addTarget(previewSurface);
 
             // Set up Surface for the MediaRecorder
             Surface recorderSurface = mediaRecorder.getSurface();

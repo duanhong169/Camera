@@ -13,7 +13,7 @@
         android:layout_height="wrap_content"
         android:layout_centerInParent="true"
         app:mode="video"
-        app:aspectRatio="16:9"
+        app:aspectRatio="4:3"
         app:autoFocus="true"
         app:facing="back"
         app:fillSpace="false"

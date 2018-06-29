@@ -65,11 +65,11 @@ public class CameraPreview extends RelativeLayout {
     }
 
     void assign(InternalPhotographer photographer) {
+        photographer.setMode(mode);
         photographer.setAspectRatio(AspectRatio.parse(aspectRatio));
         photographer.setAutoFocus(autoFocus);
         photographer.setFacing(facing);
         photographer.setFlash(flash);
-        photographer.setMode(mode);
     }
 
     @Override
