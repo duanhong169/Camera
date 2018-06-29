@@ -594,7 +594,8 @@ public class Camera2Photographer implements InternalPhotographer {
             }
         }
 
-        if (!previewSizeMap.ratios().contains(aspectRatio)) {
+        // fix the aspectRatio if set
+        if (aspectRatio != null && !previewSizeMap.ratios().contains(aspectRatio)) {
             aspectRatio = previewSizeMap.ratios().iterator().next();
         }
     }
