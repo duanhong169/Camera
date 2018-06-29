@@ -67,9 +67,9 @@
             android:id="@+id/fillSpace"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:padding="4dp"
             android:text="@string/fill"
-            android:textColor="#ffffff"/>
+            android:textColor="#ffffff"
+            android:buttonTint="#ffffff"/>
 
         <top.defaults.view.TextButton
             android:id="@+id/flash"
@@ -92,32 +92,31 @@
         android:background="#3fffffff">
 
         <top.defaults.view.TextButton
-            android:id="@+id/action"
-            android:layout_width="wrap_content"
-            android:layout_height="64dp"
-            android:layout_centerInParent="true"
-            android:padding="16dp"
-            android:textColor="@android:color/holo_red_light"
-            android:text="@string/shot"/>
-
-        <top.defaults.view.TextButton
             android:id="@+id/switch_mode"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:padding="16dp"
             android:textColor="@android:color/white"
-            android:text="@string/switch_mode" />
+            android:text="@string/video_mode" />
 
-        <top.defaults.view.TextButton
+        <ImageButton
+            android:id="@+id/action"
+            android:layout_width="wrap_content"
+            android:layout_height="64dp"
+            android:layout_centerInParent="true"
+            android:padding="16dp"
+            android:background="?android:selectableItemBackground"/>
+
+        <ImageButton
             android:id="@+id/flip"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:layout_alignParentEnd="true"
             android:padding="16dp"
-            android:textColor="@android:color/white"
-            android:text="@string/flip" />
+            android:src="@drawable/ic_switch_camera"
+            android:background="?android:selectableItemBackground"/>
 
     </RelativeLayout>
 

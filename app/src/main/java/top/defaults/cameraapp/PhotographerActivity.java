@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -48,8 +49,8 @@ public class PhotographerActivity extends AppCompatActivity {
     @BindView(R.id.flash) TextButton flashTextButton;
 
     @BindView(R.id.switch_mode) TextButton switchButton;
-    @BindView(R.id.action) TextButton actionButton;
-    @BindView(R.id.flip) TextButton flipButton;
+    @BindView(R.id.action) ImageButton actionButton;
+    @BindView(R.id.flip) ImageButton flipButton;
 
     private int currentFlash = Values.FLASH_AUTO;
 
@@ -222,11 +223,13 @@ public class PhotographerActivity extends AppCompatActivity {
             @Override
             public void onDeviceConfigured() {
                 if (photographer.getMode() == Values.MODE_VIDEO) {
-                    actionButton.setText(R.string.record);
+                    actionButton.setImageResource(R.drawable.record);
                     chooseSizeButton.setText(R.string.video_size);
+                    switchButton.setText(R.string.video_mode);
                 } else {
-                    actionButton.setText(R.string.shot);
+                    actionButton.setImageResource(R.drawable.ic_camera);
                     chooseSizeButton.setText(R.string.image_size);
+                    switchButton.setText(R.string.image_mode);
                 }
             }
 
@@ -243,7 +246,7 @@ public class PhotographerActivity extends AppCompatActivity {
             @Override
             public void onStartRecording() {
                 actionButton.setEnabled(true);
-                actionButton.setText(R.string.finish);
+                actionButton.setImageResource(R.drawable.stop);
                 statusTextView.setVisibility(View.VISIBLE);
             }
 
@@ -304,7 +307,7 @@ public class PhotographerActivity extends AppCompatActivity {
             switchButton.setVisibility(View.VISIBLE);
             flipButton.setVisibility(View.VISIBLE);
             actionButton.setEnabled(true);
-            actionButton.setText(R.string.record);
+            actionButton.setImageResource(R.drawable.record);
         }
     }
 }
