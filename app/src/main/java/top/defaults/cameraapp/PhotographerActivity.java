@@ -168,11 +168,11 @@ public class PhotographerActivity extends AppCompatActivity {
         if (flash == Values.FLASH_TORCH) {
             photographer.setFlash(currentFlash);
             flashTextButton.setEnabled(true);
-            flashTorch.setImageResource(R.drawable.light_on);
+            flashTorch.setImageResource(R.drawable.light_off);
         } else {
             photographer.setFlash(Values.FLASH_TORCH);
             flashTextButton.setEnabled(false);
-            flashTorch.setImageResource(R.drawable.light_off);
+            flashTorch.setImageResource(R.drawable.light_on);
         }
     }
 

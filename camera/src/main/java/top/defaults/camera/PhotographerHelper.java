@@ -14,8 +14,7 @@ public class PhotographerHelper {
     }
 
     public void flip() {
-        int facing = photographer.getFacing();
-        int newFacing = (facing == Values.FACING_BACK ? Values.FACING_FRONT : Values.FACING_BACK);
+        int newFacing = (photographer.getFacing() == Values.FACING_BACK ? Values.FACING_FRONT : Values.FACING_BACK);
         photographer.setFacing(newFacing);
     }
 
