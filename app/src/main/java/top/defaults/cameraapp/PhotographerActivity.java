@@ -47,6 +47,7 @@ public class PhotographerActivity extends AppCompatActivity {
 
     @BindView(R.id.chooseSize) TextButton chooseSizeButton;
     @BindView(R.id.flash) TextButton flashTextButton;
+    @BindView(R.id.flash_torch) ImageButton flashTorch;
 
     @BindView(R.id.switch_mode) TextButton switchButton;
     @BindView(R.id.action) ImageButton actionButton;
@@ -158,6 +159,20 @@ public class PhotographerActivity extends AppCompatActivity {
             }
         } else if (mode == Values.MODE_IMAGE) {
             photographer.takePicture();
+        }
+    }
+
+    @OnClick(R.id.flash_torch)
+    void toggleFlashTorch() {
+        int flash = photographer.getFlash();
+        if (flash == Values.FLASH_TORCH) {
+            photographer.setFlash(currentFlash);
+            flashTextButton.setEnabled(true);
+            flashTorch.setImageResource(R.drawable.light_on);
+        } else {
+            photographer.setFlash(Values.FLASH_TORCH);
+            flashTextButton.setEnabled(false);
+            flashTorch.setImageResource(R.drawable.light_off);
         }
     }
 
