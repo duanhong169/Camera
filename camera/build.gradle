@@ -1,5 +1,29 @@
 apply plugin: 'com.android.library'
 
+ext {
+    bintrayRepo = 'Hong'
+    bintrayName = 'camera'
+
+    publishedGroupId = 'com.github.duanhong169'
+    libraryName = 'Camera'
+    artifact = 'camera'
+
+    libraryDescription = 'Use android camera to take pictures and videos'
+
+    siteUrl = 'https://github.com/duanhong169/Camera'
+    gitUrl = 'https://github.com/duanhong169/Camera.git'
+
+    libraryVersion = '1.0.0'
+
+    developerId = 'duanhong169'
+    developerName = 'Hong Duan'
+    developerEmail = 'duanhong169@gmail.com'
+
+    licenseName = 'The MIT License, Version 2.0'
+    licenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+    allLicenses = ["Apache-2.0"]
+}
+
 android {
     compileSdkVersion 27
     defaultConfig {
