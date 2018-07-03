@@ -43,6 +43,8 @@ import top.defaults.logger.Logger;
 
 public class Camera2Photographer implements InternalPhotographer {
 
+    private static final boolean DEBUG = false;
+
     private static final int CALLBACK_ON_DEVICE_CONFIGURED = 1;
     private static final int CALLBACK_ON_PREVIEW_STARTED = 2;
     private static final int CALLBACK_ON_PREVIEW_STOPPED = 3;
@@ -197,7 +199,7 @@ public class Camera2Photographer implements InternalPhotographer {
                 previewRequestBuilder.set(CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER,
                         CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER_IDLE);
             } catch (CameraAccessException e) {
-                Logger.e("Failed to run precapture sequence.", e);
+                callbackHandler.onError(new Error(Error.ERROR_CAMERA, e));
             }
         }
 
@@ -867,7 +869,7 @@ public class Camera2Photographer implements InternalPhotographer {
             imageCaptureCallback.setState(ImageCaptureCallback.STATE_LOCKING);
             captureSession.capture(previewRequestBuilder.build(), imageCaptureCallback, null);
         } catch (CameraAccessException e) {
-            Logger.e("Failed to lock focus.", e);
+            callbackHandler.onError(new Error(Error.ERROR_CAMERA, "Failed to lock focus.", e));
         }
     }
 
@@ -925,7 +927,7 @@ public class Camera2Photographer implements InternalPhotographer {
                         }
                     }, null);
         } catch (CameraAccessException e) {
-            Logger.e("Cannot capture a still picture.", e);
+            callbackHandler.onError(new Error(Error.ERROR_CAMERA, "Cannot capture a still picture.", e));
         }
     }
 
@@ -1118,7 +1120,9 @@ public class Camera2Photographer implements InternalPhotographer {
             if (onEventListener == null) {
                 return;
             }
-            Logger.d("handleMessage: " + msg.what);
+            if (DEBUG) {
+                Logger.d("handleMessage: " + msg.what);
+            }
             switch (msg.what) {
                 case CALLBACK_ON_DEVICE_CONFIGURED:
                     onEventListener.onDeviceConfigured();
