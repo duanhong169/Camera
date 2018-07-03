@@ -10,6 +10,17 @@ Use android camera to take pictures and videos, based on [camera2](https://devel
 * Support both image capture & video record
 * Configurable audio/video size and aspect ratio, auto focus, tap to focus, flash control, etc.
 
+## Gradle
+
+```
+dependencies {
+    implementation 'com.github.duanhong169:camera:${latestVersion}'
+    ...
+}
+```
+
+> Replace `${latestVersion}` with the latest version code. See [releases](https://github.com/duanhong169/Camera/releases).
+
 ## Usage
 
 * Add `CameraView` into your layout xml:
