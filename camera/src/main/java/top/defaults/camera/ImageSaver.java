@@ -8,11 +8,6 @@ import java.nio.ByteBuffer;
 
 class ImageSaver implements Runnable {
 
-    interface Callback {
-        void onFinish(String filePath);
-        void onError(Error error);
-    }
-
     private final Image image;
     private final String filePath;
 

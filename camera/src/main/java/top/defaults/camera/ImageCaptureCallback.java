@@ -19,13 +19,13 @@ abstract class ImageCaptureCallback
     static final int STATE_WAITING = 4;
     static final int STATE_CAPTURING = 5;
 
-    private int mState;
+    private int state;
 
     ImageCaptureCallback() {
     }
 
     void setState(int state) {
-        mState = state;
+        this.state = state;
     }
 
     @Override
@@ -41,7 +41,7 @@ abstract class ImageCaptureCallback
     }
 
     private void process(@NonNull CaptureResult result) {
-        switch (mState) {
+        switch (state) {
             case STATE_LOCKING: {
                 Integer af = result.get(CaptureResult.CONTROL_AF_STATE);
                 if (af == null) {
