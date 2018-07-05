@@ -30,6 +30,7 @@ import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
 import android.util.SparseIntArray;
 import android.view.MotionEvent;
+import android.view.OrientationEventListener;
 import android.view.Surface;
 
 import java.io.IOException;
@@ -88,6 +89,7 @@ public class Camera2Photographer implements InternalPhotographer {
     private CameraView preview;
     private AutoFitTextureView textureView;
     private CallbackHandler callbackHandler;
+    private OrientationEventListener orientationEventListener;
 
     private boolean isInitialized;
     private boolean isPreviewStarted;
@@ -123,6 +125,8 @@ public class Camera2Photographer implements InternalPhotographer {
     private String cameraId;
     private CameraCharacteristics characteristics;
     private Integer sensorOrientation;
+    // last determined degree, it is either Surface.Rotation_0, _90, _180, _270, or -1 (undetermined)
+    private int currentDeviceRotation = -1;
 
     private ImageReader imageReader;
     private MediaRecorder mediaRecorder;
@@ -157,8 +161,7 @@ public class Camera2Photographer implements InternalPhotographer {
 
         @Override
         public void onError(@NonNull CameraDevice camera, int error) {
-            camera.close();
-            Camera2Photographer.this.camera = null;
+            stopPreview();
             callbackHandler.onError(new Error(Error.ERROR_CAMERA));
         }
     };
@@ -176,6 +179,7 @@ public class Camera2Photographer implements InternalPhotographer {
 
         @Override
         public void onConfigureFailed(@NonNull CameraCaptureSession session) {
+            stopPreview();
             callbackHandler.onError(new Error(Error.ERROR_CAMERA));
         }
 
@@ -228,6 +232,36 @@ public class Camera2Photographer implements InternalPhotographer {
         cameraManager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
         callbackHandler = new CallbackHandler(activityContext);
         textureView.addCallback(this::startCaptureSession);
+        orientationEventListener = new OrientationEventListener(activityContext) {
+
+            // a slop before change the device orientation
+            private int changeSlop = 10;
+
+            @Override
+            public void onOrientationChanged(int orientation) {
+                if (shouldChange(orientation)) {
+                    int rotation = Surface.ROTATION_0;
+                    if ((orientation >= 0 && orientation < 45) || (orientation >= 315 && orientation < 360)) {
+                        rotation = Surface.ROTATION_0;
+                    } else if (orientation >= 45 && orientation < 135) {
+                        rotation = Surface.ROTATION_270;
+                    } else if (orientation >= 135 && orientation < 225) {
+                        rotation = Surface.ROTATION_180;
+                    } else if (orientation >= 225 && orientation < 315) {
+                        rotation = Surface.ROTATION_90;
+                    }
+                    currentDeviceRotation = rotation;
+                }
+            }
+
+            private boolean shouldChange(int orientation) {
+                if (currentDeviceRotation == -1) return true;
+                if (currentDeviceRotation == 0) return orientation >= 45 + changeSlop && orientation < 315 - changeSlop;
+                int upLimit = currentDeviceRotation + 45 + changeSlop;
+                int downLimit = currentDeviceRotation - 45 - changeSlop;
+                return !(orientation >= downLimit && orientation < upLimit);
+            }
+        };
         isInitialized = true;
     }
 
@@ -267,12 +301,18 @@ public class Camera2Photographer implements InternalPhotographer {
 
         if (!chooseCameraIdByFacing()) {
             callbackHandler.onError(new Error(Error.ERROR_CAMERA));
+            return;
         }
-        collectCameraInfo();
+        if (!collectCameraInfo()) {
+            return;
+        }
         prepareWorkers();
 
         callbackHandler.onDeviceConfigured();
         startOpeningCamera();
+        if (orientationEventListener != null) {
+            orientationEventListener.enable();
+        }
         isPreviewStarted = true;
     }
 
@@ -341,19 +381,20 @@ public class Camera2Photographer implements InternalPhotographer {
         videoSize = null;
     }
 
-    private void collectCameraInfo() {
+    private boolean collectCameraInfo() {
         StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
 
         sensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
         if (map == null) {
             callbackHandler.onError(new Error(Error.ERROR_CAMERA, "Cannot get available preview/video sizes"));
-            return;
+            return false;
         }
 
         collectPreviewSizes(map);
         collectImageSizes(map);
         collectVideoSizes(map);
         refineSizes();
+        return true;
     }
 
     private void prepareWorkers() {
@@ -385,7 +426,7 @@ public class Camera2Photographer implements InternalPhotographer {
             size = videoSize;
             mediaRecorder = new MediaRecorder();
         } else {
-            throw new RuntimeException();
+            throw new RuntimeException("Wrong mode value: " + mode);
         }
         previewSize = chooseOptimalPreviewSize(size);
 
@@ -417,6 +458,9 @@ public class Camera2Photographer implements InternalPhotographer {
     @Override
     public void stopPreview() {
         isPreviewStarted = false;
+        if (orientationEventListener != null) {
+            orientationEventListener.disable();
+        }
         throwIfNotInitialized();
         closeCamera();
         stopBackgroundThread();
@@ -821,13 +865,14 @@ public class Camera2Photographer implements InternalPhotographer {
             configurator.configure(mediaRecorder);
         }
 
-        mediaRecorder.setOrientationHint(getOrientation());
+        mediaRecorder.setOrientationHint(getDeviceOrientation());
         mediaRecorder.prepare();
     }
 
     @Override
     public void pauseRecording() {
         throwIfNoMediaRecorder();
+        if (!isRecordingVideo) return;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             mediaRecorder.pause();
         } else {
@@ -838,6 +883,7 @@ public class Camera2Photographer implements InternalPhotographer {
     @Override
     public void resumeRecording() {
         throwIfNoMediaRecorder();
+        if (!isRecordingVideo) return;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             mediaRecorder.resume();
         } else {
@@ -906,7 +952,7 @@ public class Camera2Photographer implements InternalPhotographer {
                             CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
                     break;
             }
-            captureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, getOrientation());
+            captureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, getDeviceOrientation());
             captureSession.stopRepeating();
             captureSession.capture(captureRequestBuilder.build(),
                     new CameraCaptureSession.CaptureCallback() {
@@ -945,8 +991,16 @@ public class Camera2Photographer implements InternalPhotographer {
         }
     }
 
-    private int getOrientation() {
+    private int getDisplayOrientation() {
         int rotation = activityContext.getWindowManager().getDefaultDisplay().getRotation();
+        return getOrientation(rotation);
+    }
+
+    private int getDeviceOrientation() {
+        return getOrientation(currentDeviceRotation);
+    }
+
+    private int getOrientation(int rotation) {
         int degree = DEFAULT_ORIENTATIONS.get(rotation);
         switch (sensorOrientation) {
             case SENSOR_ORIENTATION_DEFAULT_DEGREES:
@@ -996,7 +1050,7 @@ public class Camera2Photographer implements InternalPhotographer {
             final int focusX;
             final int focusY;
 
-            int degree = getOrientation();
+            int degree = getDisplayOrientation();
 
             switch (degree) {
                 case 0:
