@@ -145,4 +145,8 @@ public class Utils {
         }
         return dir.getAbsolutePath() + "/" + System.currentTimeMillis() + fileSuffix;
     }
+
+    static boolean checkFloatEqual(float a, float b) {
+        return Math.abs(a - b) < 0.001;
+    }
 }
