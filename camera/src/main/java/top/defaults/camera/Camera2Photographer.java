@@ -54,9 +54,9 @@ public class Camera2Photographer implements InternalPhotographer {
     private static final int CALLBACK_ON_SHOT_FINISHED = 6;
     private static final int CALLBACK_ON_ERROR = 7;
 
-    // we don't use sizes larger than 1080p, since MediaRecorder
+    // we don't use sizes larger than 2160p, since MediaRecorder
     // cannot handle such a high-resolution video.
-    private static final int MAX_VIDEO_HEIGHT = 1080;
+    private static final int MAX_VIDEO_HEIGHT = 2160;
 
     private static final SparseIntArray INTERNAL_FACINGS = new SparseIntArray();
 
