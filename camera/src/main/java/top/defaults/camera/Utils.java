@@ -2,8 +2,11 @@ package top.defaults.camera;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Environment;
+import android.view.MotionEvent;
+import android.view.TextureView;
 
 import java.io.File;
 import java.io.IOException;
@@ -148,5 +151,41 @@ public class Utils {
 
     static boolean checkFloatEqual(float a, float b) {
         return Math.abs(a - b) < 0.001;
+    }
+
+    private static final int FOCUS_AREA_SIZE = 150;
+
+    static Rect calculateFocusArea(Rect sensorArraySize, int displayOrientation, TextureView textureView, MotionEvent event) {
+        final int eventX = (int) event.getX();
+        final int eventY = (int) event.getY();
+
+        final int focusX;
+        final int focusY;
+
+        switch (displayOrientation) {
+            case 0:
+                focusX = (int)((eventX / (float)textureView.getWidth())  * (float)sensorArraySize.width());
+                focusY = (int)((eventY / (float)textureView.getHeight()) * (float)sensorArraySize.height());
+                break;
+            case 180:
+                focusX = (int)((1 - (eventX / (float)textureView.getWidth()))  * (float)sensorArraySize.width());
+                focusY = (int)((1 - (eventY / (float)textureView.getHeight())) * (float)sensorArraySize.height());
+                break;
+            case 270:
+                focusX = (int)((1- (eventY / (float)textureView.getHeight())) * (float)sensorArraySize.width());
+                focusY = (int)((eventX / (float)textureView.getWidth())  * (float)sensorArraySize.height());
+                break;
+            case 90:
+            default:
+                focusX = (int)((eventY / (float)textureView.getHeight()) * (float)sensorArraySize.width());
+                focusY = (int)((1 - (eventX / (float)textureView.getWidth()))  * (float)sensorArraySize.height());
+                break;
+        }
+
+        int left = Math.max(focusX - FOCUS_AREA_SIZE,  0);
+        int top = Math.max(focusY - FOCUS_AREA_SIZE, 0);
+        int right = Math.min(left + FOCUS_AREA_SIZE  * 2, sensorArraySize.width());
+        int bottom = Math.min(top + FOCUS_AREA_SIZE  * 2, sensorArraySize.width());
+        return new Rect(left, top, right, bottom);
     }
 }

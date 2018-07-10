@@ -18,7 +18,6 @@ import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.TotalCaptureResult;
-import android.hardware.camera2.params.MeteringRectangle;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.ImageReader;
 import android.media.MediaRecorder;
@@ -54,7 +53,6 @@ public class Camera2Photographer implements InternalPhotographer {
         INTERNAL_FACINGS.put(Values.FACING_FRONT, CameraCharacteristics.LENS_FACING_FRONT);
     }
 
-    private static final int FOCUS_AREA_SIZE = 150;
     private static final int SENSOR_ORIENTATION_DEFAULT_DEGREES = 90;
     private static final int SENSOR_ORIENTATION_INVERSE_DEGREES = 270;
     private static final SparseIntArray DEFAULT_ORIENTATIONS = new SparseIntArray();
@@ -92,8 +90,7 @@ public class Camera2Photographer implements InternalPhotographer {
     private boolean autoFocus = true;
     private int facing = Values.FACING_BACK;
     private int flash = Values.FLASH_OFF;
-
-    private boolean isManualFocusEngaged;
+    private FocusHandler focusHandler = new FocusHandler();
 
     private HandlerThread backgroundThread;
     private Handler backgroundHandler;
@@ -740,7 +737,7 @@ public class Camera2Photographer implements InternalPhotographer {
             }
             camera.createCaptureSession(surfaces, sessionCallback, null);
 
-            setupTapToFocus();
+            setupGestures();
         } catch (CameraAccessException e) {
             callbackHandler.onError(new Error(Error.ERROR_CAMERA, e));
         }
@@ -1054,7 +1051,7 @@ public class Camera2Photographer implements InternalPhotographer {
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    private void setupTapToFocus() {
+    private void setupGestures() {
         textureView.setOnTouchListener((v, event) -> {
             if (gestureDetector.onTouchEvent(event)) {
                 return true;
@@ -1067,102 +1064,23 @@ public class Camera2Photographer implements InternalPhotographer {
     }
 
     private void focusAt(MotionEvent event) {
-        if (isManualFocusEngaged) {
-            return;
+        Rect focusRect = null;
+        Integer maxRegionsAf = characteristics.get(CameraCharacteristics.CONTROL_MAX_REGIONS_AF);
+        if (maxRegionsAf != null && maxRegionsAf >= 1) {
+            final Rect sensorArraySize = characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
+            focusRect = Utils.calculateFocusArea(sensorArraySize, getDisplayOrientation(), textureView, event);
         }
-
-        final Rect sensorArraySize = characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
-        if (sensorArraySize == null) return;
-
-        final int eventX = (int) event.getX();
-        final int eventY = (int) event.getY();
-
-        final int focusX;
-        final int focusY;
-
-        int degree = getDisplayOrientation();
-
-        switch (degree) {
-            case 0:
-                focusX = (int)((eventX / (float)textureView.getWidth())  * (float)sensorArraySize.width());
-                focusY = (int)((eventY / (float)textureView.getHeight()) * (float)sensorArraySize.height());
-                break;
-            case 180:
-                focusX = (int)((1 - (eventX / (float)textureView.getWidth()))  * (float)sensorArraySize.width());
-                focusY = (int)((1 - (eventY / (float)textureView.getHeight())) * (float)sensorArraySize.height());
-                break;
-            case 270:
-                focusX = (int)((1- (eventY / (float)textureView.getHeight())) * (float)sensorArraySize.width());
-                focusY = (int)((eventX / (float)textureView.getWidth())  * (float)sensorArraySize.height());
-                break;
-            case 90:
-            default:
-                focusX = (int)((eventY / (float)textureView.getHeight()) * (float)sensorArraySize.width());
-                focusY = (int)((1 - (eventX / (float)textureView.getWidth()))  * (float)sensorArraySize.height());
-                break;
-        }
-
-        MeteringRectangle focusAreaTouch = new MeteringRectangle(
-                Math.max(focusX - FOCUS_AREA_SIZE,  0), Math.max(focusY - FOCUS_AREA_SIZE, 0),
-                FOCUS_AREA_SIZE  * 2, FOCUS_AREA_SIZE * 2,
-                MeteringRectangle.METERING_WEIGHT_MAX - 1);
-
-        CameraCaptureSession.CaptureCallback focusCallbackHandler = new CameraCaptureSession.CaptureCallback() {
-
-            @Override
-            public void onCaptureCompleted(@NonNull CameraCaptureSession session,
-                                           @NonNull CaptureRequest request,
-                                           @NonNull TotalCaptureResult result) {
-                isManualFocusEngaged = false;
-
-                if (request.getTag() == "FOCUS_TAG") {
-                    // the focus trigger is complete, clear AF trigger
-                    previewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, null);
+        focusHandler.focus(captureSession, previewRequestBuilder,
+                focusRect,
+                error -> {
                     // resume repeating (preview surface will get frames)
                     updatePreview(null);
                     preview.focusFinished();
-                }
-            }
-
-            @Override
-            public void onCaptureFailed(@NonNull CameraCaptureSession session,
-                                        @NonNull CaptureRequest request,
-                                        @NonNull CaptureFailure failure) {
-                isManualFocusEngaged = false;
-                preview.focusFinished();
-            }
-        };
-
-        try {
-            captureSession.stopRepeating();
-        } catch (CameraAccessException e) {
-            callbackHandler.onError(new Error(Error.ERROR_CAMERA, e));
-            return;
-        }
-
-        // cancel any existing AF trigger (repeated touches, etc.)
-        previewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, CameraMetadata.CONTROL_AF_TRIGGER_CANCEL);
-        previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF);
-
-        // add a new AF trigger with focus region
-        Integer maxRegionsAf = characteristics.get(CameraCharacteristics.CONTROL_MAX_REGIONS_AF);
-        if (maxRegionsAf != null && maxRegionsAf >= 1) {
-            previewRequestBuilder.set(CaptureRequest.CONTROL_AF_REGIONS, new MeteringRectangle[]{focusAreaTouch});
-        }
-        previewRequestBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
-        previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_AUTO);
-        previewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, CameraMetadata.CONTROL_AF_TRIGGER_START);
-        previewRequestBuilder.setTag("FOCUS_TAG"); // we'll capture this later for resuming the preview
-
-        try {
-            captureSession.capture(previewRequestBuilder.build(), focusCallbackHandler, null);
-            preview.focusRequestAt(eventX, eventY);
-        } catch (CameraAccessException e) {
-            e.printStackTrace();
-            callbackHandler.onError(new Error(Error.ERROR_CAMERA, e));
-            return;
-        }
-        isManualFocusEngaged = true;
+                    if (error != null) {
+                        callbackHandler.onError(error);
+                    }
+                });
+        preview.focusRequestAt((int) event.getX(), (int) event.getY());
     }
 
     private void updateZoom(float newZoom) {
