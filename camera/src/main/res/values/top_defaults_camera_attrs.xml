@@ -19,6 +19,7 @@
             <enum name="image" value="0"/>
             <enum name="video" value="1"/>
         </attr>
+        <attr name="pinchToZoom" format="boolean"/>
         <attr name="showFocusIndicator" format="boolean"/>
     </declare-styleable>
     <item name="textureView" type="id"/>

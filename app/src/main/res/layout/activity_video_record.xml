@@ -31,10 +31,20 @@
         android:background="?android:selectableItemBackground"/>
 
     <TextView
+        android:id="@+id/zoomValue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:layout_alignParentEnd="true"
+        android:layout_centerVertical="true"
+        android:textColor="#ffffff"
+        android:textSize="14sp"/>
+
+    <TextView
         android:id="@+id/status"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="20dp"
+        android:layout_margin="16dp"
         android:layout_above="@+id/actions_layout"
         android:gravity="center_horizontal"
         android:text="@string/recording"

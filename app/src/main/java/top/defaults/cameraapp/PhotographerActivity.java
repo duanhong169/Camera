@@ -13,6 +13,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 import butterknife.BindView;
@@ -26,6 +27,7 @@ import top.defaults.camera.Error;
 import top.defaults.camera.Photographer;
 import top.defaults.camera.PhotographerFactory;
 import top.defaults.camera.PhotographerHelper;
+import top.defaults.camera.SimpleOnEventListener;
 import top.defaults.camera.Size;
 import top.defaults.camera.Utils;
 import top.defaults.camera.Values;
@@ -52,6 +54,8 @@ public class PhotographerActivity extends AppCompatActivity {
     @BindView(R.id.switch_mode) TextButton switchButton;
     @BindView(R.id.action) ImageButton actionButton;
     @BindView(R.id.flip) ImageButton flipButton;
+
+    @BindView(R.id.zoomValue) TextView zoomValueTextView;
 
     private int currentFlash = Values.FLASH_AUTO;
 
@@ -232,7 +236,7 @@ public class PhotographerActivity extends AppCompatActivity {
         photographer = PhotographerFactory.createPhotographerWithCamera2(this, preview);
         photographerHelper = new PhotographerHelper(photographer);
         photographerHelper.setFileDir(Commons.MEDIA_DIR);
-        photographer.setOnEventListener(new Photographer.OnEventListener() {
+        photographer.setOnEventListener(new SimpleOnEventListener() {
             @Override
             public void onDeviceConfigured() {
                 if (photographer.getMode() == Values.MODE_VIDEO) {
@@ -247,13 +251,8 @@ public class PhotographerActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onPreviewStarted() {
-
-            }
-
-            @Override
-            public void onPreviewStopped() {
-
+            public void onZoomChanged(float zoom) {
+                zoomValueTextView.setText(String.format(Locale.getDefault(), "%.1fX", zoom));
             }
 
             @Override

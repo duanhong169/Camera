@@ -12,11 +12,12 @@ class CallbackHandler extends Handler {
 
     private static final int CALLBACK_ON_DEVICE_CONFIGURED = 1;
     private static final int CALLBACK_ON_PREVIEW_STARTED = 2;
-    private static final int CALLBACK_ON_PREVIEW_STOPPED = 3;
-    private static final int CALLBACK_ON_START_RECORDING = 4;
-    private static final int CALLBACK_ON_FINISH_RECORDING = 5;
-    private static final int CALLBACK_ON_SHOT_FINISHED = 6;
-    private static final int CALLBACK_ON_ERROR = 7;
+    private static final int CALLBACK_ON_ZOOM_CHANGED = 3;
+    private static final int CALLBACK_ON_PREVIEW_STOPPED = 4;
+    private static final int CALLBACK_ON_START_RECORDING = 5;
+    private static final int CALLBACK_ON_FINISH_RECORDING = 6;
+    private static final int CALLBACK_ON_SHOT_FINISHED = 7;
+    private static final int CALLBACK_ON_ERROR = 8;
 
     private Photographer.OnEventListener onEventListener;
 
@@ -42,6 +43,9 @@ class CallbackHandler extends Handler {
                 break;
             case CALLBACK_ON_PREVIEW_STARTED:
                 onEventListener.onPreviewStarted();
+                break;
+            case CALLBACK_ON_ZOOM_CHANGED:
+                onEventListener.onZoomChanged((float) msg.obj);
                 break;
             case CALLBACK_ON_PREVIEW_STOPPED:
                 onEventListener.onPreviewStopped();
@@ -69,6 +73,10 @@ class CallbackHandler extends Handler {
 
     void onPreviewStarted() {
         Message.obtain(this, CALLBACK_ON_PREVIEW_STARTED).sendToTarget();
+    }
+
+    void onZoomChanged(float zoom) {
+        Message.obtain(this, CALLBACK_ON_ZOOM_CHANGED, zoom).sendToTarget();
     }
 
     void onPreviewStopped() {

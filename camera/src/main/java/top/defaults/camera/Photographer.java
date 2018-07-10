@@ -45,6 +45,10 @@ public interface Photographer {
 
     int getFlash();
 
+    void setZoom(float zoom);
+
+    float getZoom();
+
     void setMode(int mode);
 
     int getMode();
@@ -109,6 +113,8 @@ public interface Photographer {
         void onDeviceConfigured();
 
         void onPreviewStarted();
+
+        void onZoomChanged(float zoom);
 
         void onPreviewStopped();
 

@@ -27,10 +27,8 @@ import android.os.HandlerThread;
 import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
 import android.util.SparseIntArray;
-import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.OrientationEventListener;
-import android.view.ScaleGestureDetector;
 import android.view.Surface;
 
 import java.io.IOException;
@@ -57,8 +55,6 @@ public class Camera2Photographer implements InternalPhotographer {
     private AutoFitTextureView textureView;
     private CallbackHandler callbackHandler;
     private OrientationEventListener orientationEventListener;
-    private GestureDetector gestureDetector;
-    private ScaleGestureDetector scaleGestureDetector;
     private float zoom = 1.f;
     private static final int MAX_ZOOM = 10;
 
@@ -146,6 +142,7 @@ public class Camera2Photographer implements InternalPhotographer {
             applyZoom();
             updatePreview(null);
             callbackHandler.onPreviewStarted();
+            callbackHandler.onZoomChanged(zoom);
         }
 
         @Override
@@ -202,7 +199,23 @@ public class Camera2Photographer implements InternalPhotographer {
         this.textureView = preview.getTextureView();
         cameraManager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
         callbackHandler = new CallbackHandler(activityContext);
-        textureView.addCallback(this::startCaptureSession);
+        preview.addCallback(new CameraView.Callback() {
+            @Override
+            public void onSingleTap(MotionEvent e) {
+                focusAt(e);
+            }
+
+            @Override
+            public void onScale(float scaleFactor) {
+                updateZoom(zoom * scaleFactor);
+                updatePreview(null);
+            }
+
+            @Override
+            public void onSurfaceChanged() {
+                startCaptureSession();
+            }
+        });
         orientationEventListener = new OrientationEventListener(activityContext) {
 
             // a slop before change the device orientation
@@ -233,29 +246,6 @@ public class Camera2Photographer implements InternalPhotographer {
                 return !(orientation >= downLimit && orientation < upLimit);
             }
         };
-        gestureDetector = new GestureDetector(activityContext, new GestureDetector.SimpleOnGestureListener() {
-            @Override
-            public boolean onSingleTapConfirmed(MotionEvent e) {
-                focusAt(e);
-                return true;
-            }
-        });
-        scaleGestureDetector = new ScaleGestureDetector(activityContext, new ScaleGestureDetector.SimpleOnScaleGestureListener() {
-            @Override
-            public boolean onScale(ScaleGestureDetector detector) {
-                float scaleFactor = detector.getScaleFactor();
-                float newZoom = zoom * scaleFactor;
-                if (newZoom < 1.f) {
-                    newZoom = 1.f;
-                }
-                if (newZoom > MAX_ZOOM) {
-                    newZoom = MAX_ZOOM;
-                }
-                updateZoom(newZoom);
-                updatePreview(null);
-                return true;
-            }
-        });
         isInitialized = true;
     }
 
@@ -583,6 +573,16 @@ public class Camera2Photographer implements InternalPhotographer {
     }
 
     @Override
+    public void setZoom(float zoom) {
+        updateZoom(zoom);
+    }
+
+    @Override
+    public float getZoom() {
+        return zoom;
+    }
+
+    @Override
     public void setMode(int mode) {
         this.mode = mode;
         restartPreview();
@@ -716,8 +716,6 @@ public class Camera2Photographer implements InternalPhotographer {
                 surfaces.add(imageReader.getSurface());
             }
             camera.createCaptureSession(surfaces, sessionCallback, null);
-
-            setupGestures();
         } catch (CameraAccessException e) {
             callbackHandler.onError(new Error(Error.ERROR_CAMERA, e));
         }
@@ -1014,19 +1012,6 @@ public class Camera2Photographer implements InternalPhotographer {
         }
     }
 
-    @SuppressLint("ClickableViewAccessibility")
-    private void setupGestures() {
-        textureView.setOnTouchListener((v, event) -> {
-            if (gestureDetector.onTouchEvent(event)) {
-                return true;
-            }
-            if (scaleGestureDetector.onTouchEvent(event)) {
-                return true;
-            }
-            return true;
-        });
-    }
-
     private void focusAt(MotionEvent event) {
         Rect focusRect = null;
         Integer maxRegionsAf = characteristics.get(CameraCharacteristics.CONTROL_MAX_REGIONS_AF);
@@ -1048,9 +1033,15 @@ public class Camera2Photographer implements InternalPhotographer {
     }
 
     private void updateZoom(float newZoom) {
+        newZoom = clampZoom(newZoom);
         if (Utils.checkFloatEqual(zoom, newZoom)) return;
         zoom = newZoom;
+        callbackHandler.onZoomChanged(zoom);
         applyZoom();
+    }
+
+    private float clampZoom(float zoom) {
+        return Utils.clamp(zoom, 1.f, MAX_ZOOM);
     }
 
     private void applyZoom() {

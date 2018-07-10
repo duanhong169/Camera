@@ -192,7 +192,7 @@ class AutoFitTextureView extends TextureView {
         }
     }
 
-    protected void dispatchSurfaceChanged() {
+    private void dispatchSurfaceChanged() {
         for (Callback callback : callbacks) {
             callback.onSurfaceChanged();
         }

@@ -1,13 +1,20 @@
 package top.defaults.camera;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.view.ViewCompat;
 import android.util.AttributeSet;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
 import android.view.ViewGroup;
 import android.widget.RelativeLayout;
+
+import java.util.LinkedList;
+import java.util.List;
 
 public class CameraView extends RelativeLayout {
 
@@ -15,11 +22,14 @@ public class CameraView extends RelativeLayout {
     private AutoFitTextureView textureView;
     private CameraViewOverlay overlay;
     private final DisplayOrientationDetector displayOrientationDetector;
-    String aspectRatio;
-    boolean autoFocus;
-    int facing;
-    int flash;
-    int mode;
+    private String aspectRatio;
+    private boolean autoFocus;
+    private int facing;
+    private int flash;
+    private int mode;
+    private boolean pinchToZoom;
+    private GestureDetector gestureDetector;
+    private ScaleGestureDetector scaleGestureDetector;
 
     public CameraView(@NonNull Context context) {
         this(context, null);
@@ -29,6 +39,7 @@ public class CameraView extends RelativeLayout {
         this(context, attrs, 0);
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     public CameraView(@NonNull Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
 
@@ -47,6 +58,7 @@ public class CameraView extends RelativeLayout {
         mode = typedArray.getInt(R.styleable.CameraView_mode, Values.MODE_IMAGE);
         boolean fillSpace = typedArray.getBoolean(R.styleable.CameraView_fillSpace, false);
         textureView.setFillSpace(fillSpace);
+        pinchToZoom = typedArray.getBoolean(R.styleable.CameraView_pinchToZoom, true);
         boolean showFocusIndicator = typedArray.getBoolean(R.styleable.CameraView_showFocusIndicator, true);
         typedArray.recycle();
 
@@ -62,6 +74,33 @@ public class CameraView extends RelativeLayout {
                 textureView.setDisplayOrientation(displayOrientation);
             }
         };
+
+        gestureDetector = new GestureDetector(context, new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onSingleTapConfirmed(MotionEvent e) {
+                dispatchOnSingleTap(e);
+                return true;
+            }
+        });
+        scaleGestureDetector = new ScaleGestureDetector(context, new ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            @Override
+            public boolean onScale(ScaleGestureDetector detector) {
+                if (pinchToZoom) {
+                    dispatchOnScale(detector.getScaleFactor());
+                }
+                return true;
+            }
+        });
+
+        textureView.setOnTouchListener((v, event) -> {
+            if (gestureDetector.onTouchEvent(event)) {
+                return true;
+            }
+            if (scaleGestureDetector.onTouchEvent(event)) {
+                return true;
+            }
+            return true;
+        });
     }
 
     void assign(InternalPhotographer photographer) {
@@ -126,9 +165,30 @@ public class CameraView extends RelativeLayout {
         overlay.shot();
     }
 
-    public interface Callback extends AutoFitTextureView.Callback { }
+    public interface Callback extends AutoFitTextureView.Callback {
+        void onSingleTap(MotionEvent e);
+
+        void onScale(float scaleFactor);
+    }
+
+    private List<Callback> callbacks = new LinkedList<>();
 
     public void addCallback(Callback callback) {
-        textureView.addCallback(callback);
+        if (callback != null) {
+            callbacks.add(callback);
+            textureView.addCallback(callback);
+        }
+    }
+
+    private void dispatchOnSingleTap(MotionEvent e) {
+        for (Callback callback : callbacks) {
+            callback.onSingleTap(e);
+        }
+    }
+
+    private void dispatchOnScale(float scaleFactor) {
+        for (Callback callback : callbacks) {
+            callback.onScale(scaleFactor);
+        }
     }
 }
