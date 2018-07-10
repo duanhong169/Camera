@@ -1,11 +1,14 @@
 package top.defaults.camera;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Environment;
+import android.util.SparseIntArray;
 import android.view.MotionEvent;
+import android.view.Surface;
 import android.view.TextureView;
 
 import java.io.File;
@@ -187,5 +190,42 @@ public class Utils {
         int right = Math.min(left + FOCUS_AREA_SIZE  * 2, sensorArraySize.width());
         int bottom = Math.min(top + FOCUS_AREA_SIZE  * 2, sensorArraySize.width());
         return new Rect(left, top, right, bottom);
+    }
+
+    static int getDisplayOrientation(Activity activity, int sensorOrientation) {
+        int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
+        return getOrientation(sensorOrientation, rotation);
+    }
+
+    private static final int SENSOR_ORIENTATION_DEFAULT_DEGREES = 90;
+    private static final int SENSOR_ORIENTATION_INVERSE_DEGREES = 270;
+    private static final SparseIntArray DEFAULT_ORIENTATIONS = new SparseIntArray();
+    private static final SparseIntArray INVERSE_ORIENTATIONS = new SparseIntArray();
+
+    static {
+        DEFAULT_ORIENTATIONS.append(Surface.ROTATION_0, 90);
+        DEFAULT_ORIENTATIONS.append(Surface.ROTATION_90, 0);
+        DEFAULT_ORIENTATIONS.append(Surface.ROTATION_180, 270);
+        DEFAULT_ORIENTATIONS.append(Surface.ROTATION_270, 180);
+    }
+
+    static {
+        INVERSE_ORIENTATIONS.append(Surface.ROTATION_0, 270);
+        INVERSE_ORIENTATIONS.append(Surface.ROTATION_90, 180);
+        INVERSE_ORIENTATIONS.append(Surface.ROTATION_180, 90);
+        INVERSE_ORIENTATIONS.append(Surface.ROTATION_270, 0);
+    }
+
+    static int getOrientation(int sensorOrientation, int displayRotation) {
+        int degree = DEFAULT_ORIENTATIONS.get(displayRotation);
+        switch (sensorOrientation) {
+            case SENSOR_ORIENTATION_DEFAULT_DEGREES:
+                degree = DEFAULT_ORIENTATIONS.get(displayRotation);
+                break;
+            case SENSOR_ORIENTATION_INVERSE_DEGREES:
+                degree = INVERSE_ORIENTATIONS.get(displayRotation);
+                break;
+        }
+        return degree;
     }
 }

@@ -41,7 +41,6 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 public class Camera2Photographer implements InternalPhotographer {
-
     // we don't use sizes larger than 2160p, since MediaRecorder
     // cannot handle such a high-resolution video.
     private static final int MAX_VIDEO_HEIGHT = 2160;
@@ -51,25 +50,6 @@ public class Camera2Photographer implements InternalPhotographer {
     static {
         INTERNAL_FACINGS.put(Values.FACING_BACK, CameraCharacteristics.LENS_FACING_BACK);
         INTERNAL_FACINGS.put(Values.FACING_FRONT, CameraCharacteristics.LENS_FACING_FRONT);
-    }
-
-    private static final int SENSOR_ORIENTATION_DEFAULT_DEGREES = 90;
-    private static final int SENSOR_ORIENTATION_INVERSE_DEGREES = 270;
-    private static final SparseIntArray DEFAULT_ORIENTATIONS = new SparseIntArray();
-    private static final SparseIntArray INVERSE_ORIENTATIONS = new SparseIntArray();
-
-    static {
-        DEFAULT_ORIENTATIONS.append(Surface.ROTATION_0, 90);
-        DEFAULT_ORIENTATIONS.append(Surface.ROTATION_90, 0);
-        DEFAULT_ORIENTATIONS.append(Surface.ROTATION_180, 270);
-        DEFAULT_ORIENTATIONS.append(Surface.ROTATION_270, 180);
-    }
-
-    static {
-        INVERSE_ORIENTATIONS.append(Surface.ROTATION_0, 270);
-        INVERSE_ORIENTATIONS.append(Surface.ROTATION_90, 180);
-        INVERSE_ORIENTATIONS.append(Surface.ROTATION_180, 90);
-        INVERSE_ORIENTATIONS.append(Surface.ROTATION_270, 0);
     }
 
     private Activity activityContext;
@@ -884,7 +864,7 @@ public class Camera2Photographer implements InternalPhotographer {
             configurator.configure(mediaRecorder);
         }
 
-        mediaRecorder.setOrientationHint(getDeviceOrientation());
+        mediaRecorder.setOrientationHint(Utils.getOrientation(sensorOrientation, currentDeviceRotation));
         mediaRecorder.prepare();
     }
 
@@ -971,7 +951,8 @@ public class Camera2Photographer implements InternalPhotographer {
                             CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
                     break;
             }
-            captureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, getDeviceOrientation());
+            captureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION,
+                    Utils.getOrientation(sensorOrientation, currentDeviceRotation));
             captureRequestBuilder.set(CaptureRequest.SCALER_CROP_REGION, calculateZoomRect());
             captureSession.stopRepeating();
             captureSession.capture(captureRequestBuilder.build(),
@@ -1013,24 +994,7 @@ public class Camera2Photographer implements InternalPhotographer {
 
     private int getDisplayOrientation() {
         int rotation = activityContext.getWindowManager().getDefaultDisplay().getRotation();
-        return getOrientation(rotation);
-    }
-
-    private int getDeviceOrientation() {
-        return getOrientation(currentDeviceRotation);
-    }
-
-    private int getOrientation(int rotation) {
-        int degree = DEFAULT_ORIENTATIONS.get(rotation);
-        switch (sensorOrientation) {
-            case SENSOR_ORIENTATION_DEFAULT_DEGREES:
-                degree = DEFAULT_ORIENTATIONS.get(rotation);
-                break;
-            case SENSOR_ORIENTATION_INVERSE_DEGREES:
-                degree = INVERSE_ORIENTATIONS.get(rotation);
-                break;
-        }
-        return degree;
+        return Utils.getOrientation(sensorOrientation, rotation);
     }
 
     private void startBackgroundThread() {
