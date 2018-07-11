@@ -33,7 +33,7 @@ dependencies {
     implementation 'com.tbruyelle.rxpermissions2:rxpermissions:0.9.5@aar'
     implementation 'com.github.duanhong169:picker-view:0.3.1'
     implementation 'com.github.duanhong169:text-button:1.0.4'
-    implementation 'com.github.duanhong169:camera:1.0.2'
+    implementation 'com.github.duanhong169:camera:1.0.3'
 //    implementation project(':camera')
     implementation 'com.github.bumptech.glide:glide:4.7.1'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.7.1'

@@ -13,7 +13,7 @@ ext {
     siteUrl = 'https://github.com/duanhong169/Camera'
     gitUrl = 'https://github.com/duanhong169/Camera.git'
 
-    libraryVersion = '1.0.2'
+    libraryVersion = '1.0.3'
 
     developerId = 'duanhong169'
     developerName = 'Hong Duan'
