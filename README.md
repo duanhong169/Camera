@@ -62,12 +62,15 @@ protected void onCreate(@Nullable Bundle savedInstanceState) {
 * Implement and set `Photographer.OnEventListener` to receive events from the camera:
 
 ```java
-    photographer.setOnEventListener(new Photographer.OnEventListener() {
+    photographer.setOnEventListener(new SimpleOnEventListener() {
         @Override
         public void onDeviceConfigured() {}
 
         @Override
         public void onPreviewStarted() {}
+
+        @Override
+        public void onZoomChanged(float zoom) {}
 
         @Override
         public void onPreviewStopped() {}
