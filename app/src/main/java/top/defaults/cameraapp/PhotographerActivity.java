@@ -142,6 +142,11 @@ public class PhotographerActivity extends AppCompatActivity {
         preview.setFillSpace(checked);
     }
 
+    @OnCheckedChanged(R.id.enableZoom)
+    void onEnableZoomChecked(boolean checked) {
+        preview.setPinchToZoom(checked);
+    }
+
     @OnClick(R.id.flash)
     void flash() {
         currentFlash = (currentFlash + 1) % FLASH_OPTIONS.length;

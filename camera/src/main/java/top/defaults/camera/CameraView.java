@@ -139,6 +139,10 @@ public class CameraView extends RelativeLayout {
         textureView.setFillSpace(fillSpace);
     }
 
+    public void setPinchToZoom(boolean pinchToZoom) {
+        this.pinchToZoom = pinchToZoom;
+    }
+
     private void addOverlay() {
         overlay = new CameraViewOverlay(context);
         LayoutParams overlayParams = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);

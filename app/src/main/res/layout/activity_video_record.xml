@@ -18,6 +18,7 @@
         app:facing="back"
         app:fillSpace="false"
         app:flash="auto"
+        app:pinchToZoom="false"
         app:showFocusIndicator="true"/>
 
     <ImageButton
@@ -88,6 +89,14 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/fill"
+            android:textColor="#ffffff"
+            android:buttonTint="#ffffff"/>
+
+        <CheckBox
+            android:id="@+id/enableZoom"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/zoom"
             android:textColor="#ffffff"
             android:buttonTint="#ffffff"/>
 

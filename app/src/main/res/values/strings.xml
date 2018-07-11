@@ -14,6 +14,7 @@
     <string name="play_file">Play[%s]</string>
     <string name="done">Done</string>
     <string name="fill">Fill</string>
+    <string name="zoom">Zoom</string>
     <string name="video_size">Video size</string>
     <string name="image_size">Image size</string>
     <string name="ratio">Ratio</string>
