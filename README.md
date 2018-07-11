@@ -8,7 +8,7 @@ Use android camera to take pictures and videos, based on [camera2](https://devel
 
 * Auto filled `CameraView` for previewing
 * Support both image capture & video record
-* Configurable audio/video size and aspect ratio, auto focus, tap to focus, flash control, etc.
+* Configurable audio/video size and aspect ratio, auto focus, tap to focus, flash control, pinch to zoom, etc.
 
 ## Gradle
 
@@ -37,6 +37,7 @@ dependencies {
     app:facing="back"
     app:fillSpace="false"
     app:flash="auto"
+    app:pinchToZoom="false"
     app:showFocusIndicator="true"/>
 ```
 
