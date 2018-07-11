@@ -55,8 +55,6 @@ public class Camera2Photographer implements InternalPhotographer {
     private AutoFitTextureView textureView;
     private CallbackHandler callbackHandler;
     private OrientationEventListener orientationEventListener;
-    private float zoom = 1.f;
-    private static final int MAX_ZOOM = 10;
 
     private boolean isInitialized;
     private boolean isPreviewStarted;
@@ -90,9 +88,11 @@ public class Camera2Photographer implements InternalPhotographer {
 
     private String cameraId;
     private CameraCharacteristics characteristics;
-    private Integer sensorOrientation;
+    private int sensorOrientation = 90;
     // last determined degree, it is either Surface.Rotation_0, _90, _180, _270, or -1 (undetermined)
     private int currentDeviceRotation = -1;
+    private float zoom = 1.f;
+    private float maxZoom = 2.f;
 
     private ImageReader imageReader;
     private MediaRecorder mediaRecorder;
@@ -322,21 +322,13 @@ public class Camera2Photographer implements InternalPhotographer {
                     return false;
                 }
                 if (internal == internalFacing) {
-                    Camera2Photographer.this.cameraId = id;
-                    Camera2Photographer.this.characteristics = characteristics;
+                    updateCameraInfo(id, characteristics);
                     return true;
                 }
             }
 
             // Not found
-            cameraId = ids[0];
-            characteristics = cameraManager.getCameraCharacteristics(cameraId);
-            Integer level = characteristics.get(
-                    CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL);
-            if (level == null ||
-                    level == CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_LEGACY) {
-                return false;
-            }
+            updateCameraInfo(ids[0], cameraManager.getCameraCharacteristics(ids[0]));
             Integer internal = characteristics.get(CameraCharacteristics.LENS_FACING);
             if (internal == null) {
                 callbackHandler.onError(new Error(Error.ERROR_CAMERA, "Unexpected state: LENS_FACING null."));
@@ -358,6 +350,19 @@ public class Camera2Photographer implements InternalPhotographer {
         }
     }
 
+    private void updateCameraInfo(String cameraId, CameraCharacteristics characteristics) {
+        this.cameraId = cameraId;
+        this.characteristics = characteristics;
+        Integer orientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
+        if (orientation != null) {
+            sensorOrientation = orientation;
+        }
+        Float maxZoomObject = characteristics.get(CameraCharacteristics.SCALER_AVAILABLE_MAX_DIGITAL_ZOOM);
+        if (maxZoomObject != null) {
+            maxZoom = maxZoomObject;
+        }
+    }
+
     private void resetSizes() {
         // clear the image/video size & aspect ratio
         aspectRatio = null;
@@ -367,8 +372,6 @@ public class Camera2Photographer implements InternalPhotographer {
 
     private boolean collectCameraInfo() {
         StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-
-        sensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
         if (map == null) {
             callbackHandler.onError(new Error(Error.ERROR_CAMERA, "Cannot get available preview/video sizes"));
             return false;
@@ -1041,7 +1044,7 @@ public class Camera2Photographer implements InternalPhotographer {
     }
 
     private float clampZoom(float zoom) {
-        return Utils.clamp(zoom, 1.f, MAX_ZOOM);
+        return Utils.clamp(zoom, 1.f, maxZoom);
     }
 
     private void applyZoom() {
