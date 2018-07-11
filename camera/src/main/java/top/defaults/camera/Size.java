@@ -23,8 +23,8 @@ import android.support.annotation.NonNull;
  */
 public class Size implements Comparable<Size> {
 
-    private final int mWidth;
-    private final int mHeight;
+    private final int width;
+    private final int height;
 
     /**
      * Create a new immutable Size instance.
@@ -33,16 +33,16 @@ public class Size implements Comparable<Size> {
      * @param height The height of the size, in pixels
      */
     Size(int width, int height) {
-        mWidth = width;
-        mHeight = height;
+        this.width = width;
+        this.height = height;
     }
 
     public int getWidth() {
-        return mWidth;
+        return width;
     }
 
     public int getHeight() {
-        return mHeight;
+        return height;
     }
 
     @Override
@@ -55,25 +55,34 @@ public class Size implements Comparable<Size> {
         }
         if (o instanceof Size) {
             Size size = (Size) o;
-            return mWidth == size.mWidth && mHeight == size.mHeight;
+            return width == size.width && height == size.height;
         }
         return false;
     }
 
     @Override
     public String toString() {
-        return mWidth + "x" + mHeight;
+        return width + "x" + height;
     }
 
     @Override
     public int hashCode() {
         // assuming most sizes are <2^16, doing a rotate will give us perfect hashing
-        return mHeight ^ ((mWidth << (Integer.SIZE / 2)) | (mWidth >>> (Integer.SIZE / 2)));
+        return height ^ ((width << (Integer.SIZE / 2)) | (width >>> (Integer.SIZE / 2)));
     }
 
     @Override
     public int compareTo(@NonNull Size another) {
-        return mWidth * mHeight - another.mWidth * another.mHeight;
+        int area = getAreaSize();
+        int anotherArea = another.getAreaSize();
+        if (area != anotherArea) {
+            return area - anotherArea;
+        } else {
+            return width - another.width;
+        }
     }
 
+    int getAreaSize() {
+        return width * height;
+    }
 }

@@ -41,7 +41,7 @@ import java.util.TreeSet;
 public class Camera2Photographer implements InternalPhotographer {
     // we don't use sizes larger than 2160p, since MediaRecorder
     // cannot handle such a high-resolution video.
-    private static final int MAX_VIDEO_HEIGHT = 2160;
+    private static final int MAX_VIDEO_SIZE = 3840 * 2160;
 
     private static final SparseIntArray INTERNAL_FACINGS = new SparseIntArray();
 
@@ -617,8 +617,8 @@ public class Camera2Photographer implements InternalPhotographer {
     private void collectVideoSizes(StreamConfigurationMap map) {
         supportedVideoSizes.clear();
         for (android.util.Size size : map.getOutputSizes(MediaRecorder.class)) {
-            if (size.getHeight() > MAX_VIDEO_HEIGHT) continue;
             Size s = new Size(size.getWidth(), size.getHeight());
+            if (s.getAreaSize() > MAX_VIDEO_SIZE) continue;
             supportedVideoSizes.add(s);
             videoSizeMap.add(s);
         }
@@ -644,7 +644,7 @@ public class Camera2Photographer implements InternalPhotographer {
     private static Size chooseVideoSize(SortedSet<Size> choices) {
         Size chosen = null;
         for (Size size : choices) {
-            if (size.getWidth() == size.getHeight() * 4 / 3 && size.getHeight() <= MAX_VIDEO_HEIGHT) {
+            if (size.getWidth() == size.getHeight() * 4 / 3 && size.getHeight() <= MAX_VIDEO_SIZE) {
                 chosen = size;
             }
         }
