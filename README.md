@@ -1,6 +1,6 @@
 # Camera [![gitHub release](https://img.shields.io/github/release/duanhong169/Camera.svg?style=social)](https://github.com/duanhong169/Camera/releases) [![platform](https://img.shields.io/badge/platform-android-brightgreen.svg)](https://developer.android.com/index.html) <a target="_blank" href="https://android-arsenal.com/api?level=21"><img src="https://img.shields.io/badge/API-21%2B-brightgreen.svg?style=flat"></a> [![Android Arsenal](https://img.shields.io/badge/Android%20Arsenal-Camera-green.svg?style=flat)](https://android-arsenal.com/details/1/7018) [![license](https://img.shields.io/badge/license-Apache%202-green.svg)](https://github.com/duanhong169/Camera/blob/master/LICENSE) [![Build status](https://build.appcenter.ms/v0.1/apps/09612c7d-00b4-4b16-86b5-054c45d749f8/branches/master/badge)](https://appcenter.ms)
 
-Use android camera to take pictures and videos, based on [camera2](https://developer.android.com/reference/android/hardware/camera2/package-summary) api.
+Use Android camera to take pictures and videos, based on [camera2](https://developer.android.com/reference/android/hardware/camera2/package-summary) api.
 
 <img src='art/screenshot1.jpg' height='500px'/> <img src='art/screenshot2.jpg' height='500px'/>
 
